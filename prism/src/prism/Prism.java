@@ -1830,6 +1830,7 @@ public class Prism extends PrismComponent implements PrismSettingsListener
 		case SMG:
 		case STPG:
 		case CTMDP:
+		case LTS:
    		        if(!getExplicit()) { // not using explicit engine already
 			        mainLog.println("\nSwitching to explicit engine, which supports " + currentModelType + "s...");
 				engineOld = getEngine();

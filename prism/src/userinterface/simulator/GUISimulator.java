@@ -2528,7 +2528,9 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 				visibleColumns.add(UpdateTableModelColumn.PLAYER);
 			}
 			visibleColumns.add(UpdateTableModelColumn.ACTION);
-			visibleColumns.add(UpdateTableModelColumn.PROB);
+			if (parsedModel != null && parsedModel.getModelType().isProbabilistic()) {
+				visibleColumns.add(UpdateTableModelColumn.PROB);
+			}
 			visibleColumns.add(UpdateTableModelColumn.UPDATE);
 		}
 		
