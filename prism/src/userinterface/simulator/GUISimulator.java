@@ -45,6 +45,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import javax.swing.AbstractAction;
@@ -2385,8 +2387,13 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 		repaint();
 	}
 
+	enum UpdateTableModelColumn {
+		STRAT, PLAYER, ACTION, PROB, UPDATE
+	};
+	
 	class UpdateTableModel extends AbstractTableModel
 	{
+		private List<UpdateTableModelColumn> visibleColumns = new ArrayList<>();
 		public boolean oldUpdate;
 		private int oldStep;
 
@@ -2400,12 +2407,7 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 		public int getColumnCount()
 		{
 			if (pathActive) {
-				int cols = 3;
-				if (showStrategyCheck.isSelected() && strategyGenerated && strategy != null)
-					cols++;
-				if (parsedModel.getModelType().multiplePlayers() && !parsedModel.getModelType().concurrent())
-					cols++;
-				return cols;
+				return visibleColumns.size();
 			} else {
 				return 0;
 			}
@@ -2424,35 +2426,16 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 		{
 			if (pathActive) {
 				try {
-					// First 2 columns are optional, so adjust index
-					int offset = 0;
-					// Strategy choice
-					boolean showStrat = showStrategyCheck.isSelected() && strategyGenerated & strategy != null; 
-					if (!showStrat)
-						offset++;
-					// Player
-					boolean showPlayer = parsedModel.getModelType().multiplePlayers() && !parsedModel.getModelType().concurrent();
-					if (!showPlayer)
-						offset++;
-					// Might have strategy but not player
-					if (showStrat && !showPlayer && columnIndex == 0)
-						offset--;
-
-					switch (columnIndex + offset) {
-						// Strategy choice
-					case 0:
+					switch (visibleColumns.get(columnIndex)) {
+					case STRAT:
 						return engine.getStrategyUpdateString(rowIndex, df);
-						// Player
-					case 1:
+					case PLAYER:
 						return engine.getNameOfPlayerOwningState();
-						// Module/action
-					case 2:
+					case ACTION:
 						return engine.getTransitionActionString(rowIndex);
-						// Prob/rate
-					case 3:
+					case PROB:
 						return "" + engine.getTransitionProbability(rowIndex);
-						// Update
-					case 4:
+					case UPDATE:
 						return engine.getTransitionUpdateString(rowIndex);
 					default:
 						return "";
@@ -2465,39 +2448,25 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 		}
 
 		@Override
-		public String getColumnName(int column)
+		public String getColumnName(int columnIndex)
 		{
 			if (pathActive) {
-				// First 2 columns are optional, so adjust index
-				int offset = 0;
-				// Strategy choice
-				boolean showStrat = showStrategyCheck.isSelected() && strategyGenerated & strategy != null; 
-				if (!showStrat)
-					offset++;
-				// Player
-				boolean showPlayer = parsedModel.getModelType().multiplePlayers() && !parsedModel.getModelType().concurrent();
-				if (!showPlayer)
-					offset++;
-				// Might have strategy but not player
-				if (showStrat && !showPlayer && column == 0)
-					offset--;
-
-				switch (column + offset) {
-				case 0:
+				switch (visibleColumns.get(columnIndex)) {
+				case STRAT:
 					return "Strategy";
-				case 1:
+				case PLAYER:
 					return "Player";
-				case 2:
+				case ACTION:
 					return engine.getModel().getActionStringDescription();
-				case 3:
+				case PROB:
 					return parsedModel == null ? "Probability" : parsedModel.getModelType().probabilityOrRate();
-				case 4:
+				case UPDATE:
 					return "Update";
 				default:
 					return "";
 				}
-			} else
-				return "";
+			}
+			return "";
 		}
 
 		/**
@@ -2510,7 +2479,8 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 			}
 			oldUpdate = false;
 			oldStep = -1;
-
+			
+			setVisibleColumns();
 			doEnables();
 			fireTableDataChanged();
 
@@ -2533,6 +2503,7 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 			} else {
 				this.oldStep = oldStep;
 				oldUpdate = true;
+				setVisibleColumns();
 				doEnables();
 				engine.computeTransitionsForStep(oldStep);
 				fireTableDataChanged();
@@ -2547,6 +2518,20 @@ public class GUISimulator extends GUIPlugin implements MouseListener, ListSelect
 			}
 		}
 
+		public void setVisibleColumns()
+		{
+			visibleColumns.clear();
+			if (showStrategyCheck.isSelected() && strategyGenerated && strategy != null) {
+				visibleColumns.add(UpdateTableModelColumn.STRAT);
+			}
+			if (parsedModel != null && parsedModel.getModelType().multiplePlayers() && !parsedModel.getModelType().concurrent()) {
+				visibleColumns.add(UpdateTableModelColumn.PLAYER);
+			}
+			visibleColumns.add(UpdateTableModelColumn.ACTION);
+			visibleColumns.add(UpdateTableModelColumn.PROB);
+			visibleColumns.add(UpdateTableModelColumn.UPDATE);
+		}
+		
 		public void restartUpdatesTable()
 		{
 			fireTableStructureChanged();
