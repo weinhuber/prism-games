@@ -172,9 +172,9 @@ public class ConstructModel extends PrismComponent
 		CTMCSimple ctmc = null;
 		MDPSimple mdp = null;
 		CTMDPSimple ctmdp = null;
-		STPGExplicit stpg = null;
+		STPGSimple stpg = null;
 		CSG csg = null;
-		SMG smg = null;
+		SMGSimple smg = null;
 		ModelExplicit model = null;
 		Distribution distr = null;
 		// Game info
@@ -208,9 +208,13 @@ public class ConstructModel extends PrismComponent
 				}
 				playerNames.add(name);
 			}
+			// For STPGs, make sure there are exactly 2 players
+			if (modelType == ModelType.STPG && playerNames.size() != 2) {
+				throw new PrismException("An STPG should define exactly 2 players");
+			}
 		}
 		
-		// For CSGs, action names mucst be provided
+		// For CSGs, action names must be provided
 		if (modelType.concurrent() && modelGen.getActions() == null) {
 			throw new PrismException("Model generator must implement getActions() for concurrent games");
 		}
@@ -236,11 +240,12 @@ public class ConstructModel extends PrismComponent
 				modelSimple = ctmdp = new CTMDPSimple();
 				break;
 			case STPG:
-				modelSimple = stpg = new STPGExplicit();
+				modelSimple = stpg = new STPGSimple();
+				stpg.setPlayerNames(playerNames);
 				break;
 			case SMG:
-				modelSimple = smg = new SMG();
-				smg.setPlayerInfo(playerNames);
+				modelSimple = smg = new SMGSimple();
+				smg.setPlayerNames(playerNames);
 				break;
 			case PTA:
 			case LTS:
@@ -281,9 +286,6 @@ public class ConstructModel extends PrismComponent
 				} else if (modelType == ModelType.SMG) {
 					smg.setPlayer(src, player + 1);
 				}
-			}
-			else if (modelType == ModelType.CSG) {
-				csg.setPlayer(src, 1);
 			}
 			// Look at each outgoing choice in turn
 			for (i = 0; i < nc; i++) {
@@ -437,10 +439,10 @@ public class ConstructModel extends PrismComponent
 				model = sortStates ? new CSG(csg, permut) : csg;
 				break;
 			case STPG:
-				model = sortStates ? new STPGExplicit(stpg, permut) : stpg;
+				model = sortStates ? new STPGSimple(stpg, permut) : stpg;
 				break;
 			case SMG:
-				model = sortStates ? new SMG(smg, permut) : smg;
+				model = sortStates ? new SMGSimple(smg, permut) : smg;
 				break;
 			case PTA:
 			case LTS:

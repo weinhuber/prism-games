@@ -1454,15 +1454,6 @@ public class CSGModelChecker extends ProbModelChecker {
 				if (r > maximumReward)
 					maximumReward = r;
 				allNonzero = allNonzero && rewards.getTransitionReward(i, j) > 0;
-
-				for (int k = 0; k < csg.getNumNestedChoices(i, j); k++) {
-					r = rewards.getNestedTransitionReward(i, j, k);
-					if (r > 0.0 && r < minimumReward)
-						minimumReward = r;
-					if (r > maximumReward)
-						maximumReward = r;
-					allNonzero = allNonzero && r > 0;
-				}
 			}
 		}
 		
