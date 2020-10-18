@@ -1047,7 +1047,7 @@ public class STPGModelChecker extends ProbModelChecker
 				s = inf.nextSetBit(i);
 				for (int c = 0; c < stpg.getNumChoices(s); c++) {
 					// for player 1 check
-					if (stpg.getPlayer(s) == 1 && !stpg.allSuccessorsInSet(s, c, notInf)) {
+					if (stpg.getPlayer(s) == 0 && !stpg.allSuccessorsInSet(s, c, notInf)) {
 						adv[i] = c;
 						break;
 					}
@@ -1656,9 +1656,9 @@ public class STPGModelChecker extends ProbModelChecker
 					// transitions
 					// to something extreme so they are never chosen
 
-					if (stpg.getNumChoices(s) > 1 && prob < mcrprob.soln[s] && ((stpg.getPlayer(s) == 1 && !min1) || (stpg.getPlayer(s) == 2 && !min2))) {
+					if (stpg.getNumChoices(s) > 1 && prob < mcrprob.soln[s] && ((stpg.getPlayer(s) == 0 && !min1) || (stpg.getPlayer(s) == 1 && !min2))) {
 						rewardsRestrictedSimple.setTransitionReward(s, c, Double.NEGATIVE_INFINITY);
-					} else if (stpg.getNumChoices(s) > 1 && prob > mcrprob.soln[s] && ((stpg.getPlayer(s) == 1 && min1) || (stpg.getPlayer(s) == 2 && min2))) {
+					} else if (stpg.getNumChoices(s) > 1 && prob > mcrprob.soln[s] && ((stpg.getPlayer(s) == 0 && min1) || (stpg.getPlayer(s) == 1 && min2))) {
 						rewardsRestrictedSimple.setTransitionReward(s, c, Double.POSITIVE_INFINITY);
 					} else {
 						double newReward = rewards.getTransitionReward(s, c) * mcrprob.soln[s];
@@ -1684,9 +1684,9 @@ public class STPGModelChecker extends ProbModelChecker
 					// as a hack, set the transition reward of nonoptimal
 					// transitions
 					// to something extreme so they are never chosen
-					if (stpg.getNumChoices(s) > 1 && prob < mcrprob.soln[s] && ((stpg.getPlayer(s) == 1 && !min1) || (stpg.getPlayer(s) == 2 && !min2))) {
+					if (stpg.getNumChoices(s) > 1 && prob < mcrprob.soln[s] && ((stpg.getPlayer(s) == 0 && !min1) || (stpg.getPlayer(s) == 1 && !min2))) {
 						rewardsRestrictedSimple.setTransitionReward(s, c, Double.NEGATIVE_INFINITY);
-					} else if (stpg.getNumChoices(s) > 1 && prob > mcrprob.soln[s] && ((stpg.getPlayer(s) == 1 && min1) || (stpg.getPlayer(s) == 2 && min2))) {
+					} else if (stpg.getNumChoices(s) > 1 && prob > mcrprob.soln[s] && ((stpg.getPlayer(s) == 0 && min1) || (stpg.getPlayer(s) == 1 && min2))) {
 						rewardsRestrictedSimple.setTransitionReward(s, c, Double.POSITIVE_INFINITY);
 					} // else the reward remains 0
 				}
@@ -1790,7 +1790,7 @@ public class STPGModelChecker extends ProbModelChecker
 					}
 
 					// non-target states
-					boolean min = (stpg.getPlayer(s) == 1) ? min1 : min2;
+					boolean min = (stpg.getPlayer(s) == 0) ? min1 : min2;
 					double stateRew = -1;
 					for (int c = 0; c < stpg.getNumChoices(s); c++) {
 						double choiceRew = 0;
