@@ -4092,7 +4092,7 @@ ret.setSingleOperand(expr);
       break;
       }
     case LPARENTH:{
-      expr = ExpressionParenth(prop, pathprop);
+      expr = ExpressionParenth(prop, true);
 ret.addOperand(expr);
       break;
       }

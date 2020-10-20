@@ -120,12 +120,6 @@ public enum ModelType
 		{
 			return NEITHER;
 		}
-
-		@Override
-		public ModelType removeNondeterminism()
-		{
-			return DTMC;
-		}
 	},
 	MDP("Markov decision process") {
 		@Override
@@ -209,6 +203,31 @@ public enum ModelType
 		public ModelType removeNondeterminism()
 		{
 			return DTMC;
+		}
+	},
+	TG("turn-based game") {
+		@Override
+		public boolean multiplePlayers()
+		{
+			return true;
+		}
+		
+		@Override
+		public boolean isProbabilistic()
+		{
+			return false;
+		}
+
+		@Override
+		public String probabilityOrRate()
+		{
+			return NEITHER;
+		}
+
+		@Override
+		public ModelType removeNondeterminism()
+		{
+			return LTS;
 		}
 	},
 	TPTG("turn-based probabilistic timed game") {
