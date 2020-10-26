@@ -28,6 +28,7 @@ package explicit;
 
 import java.util.BitSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import parser.ast.Coalition;
 import parser.ast.Expression;
@@ -140,8 +141,6 @@ public class TGModelChecker extends  NonProbModelChecker
 	 */
 	protected BitSet computeReach(TG tg, BitSet target) throws PrismException
 	{
-		BitSet res = new BitSet();
-		res.set(0);
-		return res;
+		return tg.attractor(1, target, this);
 	}
 }
