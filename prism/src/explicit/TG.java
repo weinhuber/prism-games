@@ -3,6 +3,7 @@
 //	Copyright (c) 2020-
 //	Authors:
 //	* Dave Parker <d.a.parker@cs.bham.ac.uk> (University of Birmingham)
+//	* Shahram Javed <msj812@student.bham.ac.uk> (University of Birmingham)
 //	
 //------------------------------------------------------------------------------
 //	
@@ -27,6 +28,7 @@
 package explicit;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -43,7 +45,7 @@ import prism.PrismLog;
 public interface TG extends LTS, PlayerInfoOwner
 {
 	// Accessors (for Model) - default implementations
-	
+
 	@Override
 	default ModelType getModelType()
 	{
@@ -64,13 +66,13 @@ public interface TG extends LTS, PlayerInfoOwner
 		decoratorsNew.add(new StateOwnerDecorator(this::getPlayer));
 		LTS.super.exportToDotFile(out, decoratorsNew);
 	}
-	
+
 	@Override
 	default void exportToPrismLanguage(final String filename) throws PrismException
 	{
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
 	default String infoString()
 	{
@@ -92,16 +94,44 @@ public interface TG extends LTS, PlayerInfoOwner
 	}
 
 	// Accessors
-	
+
 	/**
 	 * Get the player that owns state {@code s}.
-	 * Returns the index of the player (1-indexed).
+	 * Returns the index of the player (0-indexed).
 	 * @param s Index of state (0-indexed)
 	 */
 	public int getPlayer(int s);
-	
+
+	/**
+	 * Get the active states. 
+	 * This is useful to see what states are still present in subgames.
+	 */
+	public BitSet getActiveStates();
+
+	// Attractor
+
+	/**
+	 * Compute the i-attractor of the player (0-indexed).
+	 * @param target Target states
+	 * @param parent a PrismComponent (for obtaining the log)
+	 */
+	public RegionStrategy attractor(int player, BitSet target, prism.PrismComponent parent);
+
+	/**
+	 * Compute the subgame with the given states.
+	 * @param states states
+	 */
+	public TG subgame(BitSet states);
+
+	/**
+	 * Compute the subgame without the given states.
+	 * @param states states
+	 */
+	public TG difference(BitSet states);
+
 	/**
 	 * Get an iterator over the transitions from choice {@code i} of state {@code s}.
 	 */
 	public Iterator<Entry<Integer, Double>> getTransitionsIterator(int s, int i);
+
 }
