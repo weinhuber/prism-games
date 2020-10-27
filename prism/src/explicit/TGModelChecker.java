@@ -114,7 +114,7 @@ public class TGModelChecker extends  NonProbModelChecker
 		BitSet target = checkExpression(model, expr.getOperand2(), null).getBitSet();
 		
 		// Compute/return the result
-		BitSet result = computeReach((TG) model, target);
+		BitSet result = computeReach((TG) model, target, coalition);
 		
 		return StateValues.createFromBitSet(result, model);
 	}
