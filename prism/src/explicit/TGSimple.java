@@ -28,12 +28,9 @@ package explicit;
 
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
-
 import prism.PlayerInfo;
 import prism.PlayerInfoOwner;
 import prism.PrismException;
@@ -143,48 +140,6 @@ public class TGSimple extends LTSSimple implements TG
 	public void copyPlayerInfo(PlayerInfoOwner model)
 	{
 		playerInfo = new PlayerInfo(model.getPlayerInfo());
-	}
-	
-	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent)
-	{
-		Map<Integer, Integer> outdegree = new HashMap<>();
-		for (int i = 0; i < numStates; i++) {
-			if (getPlayer(i) != player) {
-				outdegree.put(i, getNumTransitions(i));
-			}
-		}
-
-		Queue<Integer> queue = new LinkedList<Integer>();
-		for (int i = target.nextSetBit(0); i >= 0; i = target.nextSetBit(i + 1)) {
-			queue.add(i);
-		}
-		BitSet attractor = (BitSet) target.clone();
-		PredecessorRelation pre = getPredecessorRelation(parent, true);
-
-		while (!queue.isEmpty()) {
-			int from = queue.poll();
-
-			for (int to : pre.getPre(from)) {
-				if (attractor.get(to)) {
-					continue;
-				}
-
-				if (getPlayer(to) == player) {
-					if (attractor.get(from)) {
-						queue.add(to);
-						attractor.set(to);
-					}
-				} else {
-					outdegree.put(to, outdegree.get(to) - 1);
-					if (outdegree.get(to) == 0) {
-						queue.add(to);
-						attractor.set(to);
-					}
-				}
-			}
-		}
-
-		return attractor;
 	}
 	
 	// Accessors (for Model)

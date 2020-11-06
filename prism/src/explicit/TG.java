@@ -29,8 +29,6 @@ package explicit;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Set;
-
 import explicit.graphviz.StateOwnerDecorator;
 import prism.ModelType;
 import prism.PlayerInfoOwner;
@@ -97,6 +95,4 @@ public interface TG extends LTS, PlayerInfoOwner
 	 * @param s Index of state (0-indexed)
 	 */
 	public int getPlayer(int s);
-	
-	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent);
 }
