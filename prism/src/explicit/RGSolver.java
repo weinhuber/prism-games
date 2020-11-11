@@ -16,7 +16,7 @@ public class RGSolver extends TGSolver
 	protected final BitSet target;
 
 	/**
-	 * Create a new RGSolver for a turn-based game (TG) with a target set.
+	 * Create a new reachability game solver.
 	 */
 	public RGSolver(PrismComponent parent, TG tg, BitSet target)
 	{

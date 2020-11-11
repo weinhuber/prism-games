@@ -24,7 +24,7 @@ public class PredecessorLiftingStrategy extends LiftingStrategy
 	protected Queue<Integer> queue = new LinkedList<>();
 
 	/**
-	 * Create a PredecessorLiftingStrategy for a turn-based game (TG).
+	 * Create a PredecessorLiftingStrategy.
 	 */
 	public PredecessorLiftingStrategy(PrismComponent parent, TG tg, int[][] rho)
 	{

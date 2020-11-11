@@ -24,7 +24,7 @@ public abstract class PGSolver extends TGSolver
 	protected Map<Integer, BitSet> priorityMap = new HashMap<>();
 
 	/**
-	 * Create a new PGSolver for a turn-based game (TG) and a list of priorities.
+	 * Create a new parity game solver.
 	 */
 	public PGSolver(PrismComponent parent, TG tg, List<Integer> priorities)
 	{

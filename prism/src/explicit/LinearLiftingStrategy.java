@@ -18,7 +18,7 @@ public class LinearLiftingStrategy extends LiftingStrategy
 	protected int nextState = 0;
 
 	/**
-	 * Create a LinearLiftingStrategy for a turn-based game (TG).
+	 * Create a LinearLiftingStrategy.
 	 */
 	public LinearLiftingStrategy(PrismComponent parent, TG tg)
 	{

@@ -23,7 +23,7 @@ public abstract class LiftingStrategy
 	protected final TG tg;
 
 	/**
-	 * Create a LiftingStrategy for a turn-based game (TG).
+	 * Create a LiftingStrategy.
 	 */
 	public LiftingStrategy(PrismComponent parent, TG tg)
 	{
