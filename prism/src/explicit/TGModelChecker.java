@@ -28,14 +28,7 @@ package explicit;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 
 import parser.ast.Coalition;
 import parser.ast.Expression;
@@ -149,141 +142,40 @@ public class TGModelChecker extends NonProbModelChecker
 	protected BitSet computeReach(TG tg, BitSet target) throws PrismException
 	{
 		List<Integer> priorities = new ArrayList<>();
-		priorities.add(4);
-		priorities.add(3);
-		priorities.add(2);
+		// Priorities for fig3_1
+//		priorities.add(4);
+//		priorities.add(3);
+//		priorities.add(2);
+//		priorities.add(1);
+//		priorities.add(0);
+//		priorities.add(1);
+//		priorities.add(2);
+//		priorities.add(3);
+//		priorities.add(0);
+		// Priorities for random1
+		priorities.add(9);
+		priorities.add(7);
 		priorities.add(1);
-		priorities.add(0);
-		priorities.add(1);
+		priorities.add(10);
 		priorities.add(2);
-		priorities.add(3);
-		priorities.add(0);
-		System.out.println(computeParity(tg, priorities));
-		return attractor(tg, 1, target);
+		priorities.add(11);
+		priorities.add(9);
+		priorities.add(9);
+		priorities.add(12);
+		priorities.add(6);
+		System.out.println("Parity " + computeParity(tg, priorities));
+
+		return new RGSolver(this, tg, target).solve();
 	}
 
+	/**
+	 * Compute 2-player parity
+	 * @param tg 2-player TG
+	 * @param priorities List of priorities
+	 */
 	protected BitSet computeParity(TG tg, List<Integer> priorities) throws PrismException
 	{
-		return zielonka(tg, priorities).w1;
-	}
-
-	protected static class Win
-	{
-		protected BitSet w1 = new BitSet();
-		protected BitSet w2 = new BitSet();
-
-		protected BitSet get(int player)
-		{
-			if (player == 1) {
-				return w1;
-			} else {
-				return w2;
-			}
-		}
-
-		protected void set(int player, BitSet region)
-		{
-			if (player == 1) {
-				w1 = region;
-			} else {
-				w2 = region;
-			}
-		}
-	}
-
-	protected Win zielonka(TG tg, List<Integer> priorities)
-	{
-		Win W = new Win();
-		if (tg.getNumTransitions() == 0) {
-			return W;
-		}
-
-		int d = Collections.max(priorities);
-		BitSet U = new BitSet();
-		for (int i = 0; i < priorities.size(); i++) {
-			if (priorities.get(i) == d) {
-				U.set(i);
-			}
-		}
-
-		int p = d % 2;
-		int j = 1 - p;
-
-		BitSet A = attractor(tg, p, U);
-		Win WDash = zielonka(diff(tg, A), diff(priorities, A));
-
-		if (WDash.get(j).isEmpty()) {
-			WDash.get(p).or(A);
-			W.set(p, WDash.get(p));
-			W.set(j, new BitSet());
-		} else {
-			BitSet B = attractor(tg, j, WDash.get(j));
-			WDash = zielonka(diff(tg, B), diff(priorities, B));
-			W.set(p, WDash.get(p));
-			WDash.get(j).or(B);
-			W.set(j, WDash.get(j));
-		}
-
-		return W;
-	}
-
-	protected BitSet attractor(TG tg, int player, BitSet target)
-	{
-		Map<Integer, Integer> outdegree = new HashMap<>();
-		for (int i = 0; i < tg.getNumStates(); i++) {
-			if (tg.getPlayer(i) != player) {
-				outdegree.put(i, tg.getNumTransitions(i));
-			}
-		}
-
-		Queue<Integer> queue = new LinkedList<Integer>();
-		for (int i = target.nextSetBit(0); i >= 0; i = target.nextSetBit(i + 1)) {
-			queue.add(i);
-		}
-		BitSet attractor = (BitSet) target.clone();
-		PredecessorRelation pre = tg.getPredecessorRelation(this, true);
-
-		while (!queue.isEmpty()) {
-			int from = queue.poll();
-
-			for (int to : pre.getPre(from)) {
-				if (attractor.get(to)) {
-					continue;
-				}
-
-				if (tg.getPlayer(to) == player) {
-					if (attractor.get(from)) {
-						queue.add(to);
-						attractor.set(to);
-					}
-				} else {
-					outdegree.put(to, outdegree.get(to) - 1);
-					if (outdegree.get(to) == 0) {
-						queue.add(to);
-						attractor.set(to);
-					}
-				}
-			}
-		}
-
-		return attractor;
-	}
-
-	protected TG diff(TG tg, BitSet states)
-	{
-		TGSimple diff = new TGSimple((TGSimple) tg);
-		for (int i = states.nextSetBit(0); i >= 0; i = states.nextSetBit(i + 1)) {
-			diff.clearState(i);
-		}
-		return diff;
-	}
-
-	protected List<Integer> diff(List<Integer> priorities, BitSet states)
-	{
-		List<Integer> priorities1 = new ArrayList<>(priorities);
-		for (int i = states.nextSetBit(0); i >= 0; i = states.nextSetBit(i + 1)) {
-			priorities1.set(i, -1);
-		}
-		return priorities1;
+		//				return new ZielonkaRecursive(this, tg, priorities).solve();
+		return new SmallProgressMeasures(this, tg, priorities).solve();
 	}
 }

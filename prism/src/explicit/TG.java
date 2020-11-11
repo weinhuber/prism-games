@@ -41,7 +41,7 @@ import prism.PrismLog;
 public interface TG extends LTS, PlayerInfoOwner
 {
 	// Accessors (for Model) - default implementations
-	
+
 	@Override
 	default ModelType getModelType()
 	{
@@ -60,13 +60,13 @@ public interface TG extends LTS, PlayerInfoOwner
 		decoratorsNew.add(new StateOwnerDecorator(this::getPlayer));
 		LTS.super.exportToDotFile(out, decoratorsNew);
 	}
-	
+
 	@Override
 	default void exportToPrismLanguage(final String filename) throws PrismException
 	{
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
 	default String infoString()
 	{
@@ -88,11 +88,21 @@ public interface TG extends LTS, PlayerInfoOwner
 	}
 
 	// Accessors
-	
+
 	/**
 	 * Get the player that owns state {@code s}.
 	 * Returns the index of the player (1-indexed).
 	 * @param s Index of state (0-indexed)
 	 */
 	public int getPlayer(int s);
+
+	// Attractor
+
+	/**
+	 * Compute the i-attractor of the player (1-indexed).
+	 * @param target Target states
+	 * @param parent a PrismComponent (for obtaining the log)
+	 */
+	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent);
+
 }

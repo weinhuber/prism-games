@@ -44,12 +44,12 @@ public class TGSimple extends LTSSimple implements TG
 	 * Which player owns each state
 	 */
 	protected StateOwnersSimple stateOwners;
-	
+
 	/**
 	 * Player + coalition information
 	 */
 	protected PlayerInfo playerInfo;
-	
+
 	// Constructors
 
 	/**
@@ -81,7 +81,7 @@ public class TGSimple extends LTSSimple implements TG
 		stateOwners = new StateOwnersSimple(tg.stateOwners);
 		playerInfo = new PlayerInfo(tg.playerInfo);
 	}
-	
+
 	/**
 	 * Construct a TG from an existing one and a state index permutation,
 	 * i.e. in which state index i becomes index permut[i].
@@ -141,9 +141,9 @@ public class TGSimple extends LTSSimple implements TG
 	{
 		playerInfo = new PlayerInfo(model.getPlayerInfo());
 	}
-	
+
 	// Accessors (for Model)
-	
+
 	@Override
 	public void checkForDeadlocks(BitSet except) throws PrismException
 	{
@@ -152,7 +152,7 @@ public class TGSimple extends LTSSimple implements TG
 				throw new PrismException("Game has a deadlock in state " + i + (statesList == null ? "" : ": " + statesList.get(i)));
 		}
 	}
-	
+
 	// Accessors (for PlayerInfoOwner)
 
 	@Override
@@ -160,12 +160,56 @@ public class TGSimple extends LTSSimple implements TG
 	{
 		return playerInfo;
 	}
-	
+
 	// Accessors (for TG)
-	
+
 	@Override
 	public int getPlayer(int s)
 	{
 		return playerInfo.getPlayer(stateOwners.getPlayer(s));
 	}
+
+	// Attractor
+
+	@Override
+	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent)
+	{
+		Map<Integer, Integer> outdegree = new HashMap<>();
+		for (int i = 0; i < getNumStates(); i++) {
+			if (getPlayer(i) != player) {
+				outdegree.put(i, getNumTransitions(i));
+			}
+		}
+
+		Queue<Integer> queue = new LinkedList<Integer>();
+		target.stream().forEach(s -> queue.add(s));
+		BitSet attractor = (BitSet) target.clone();
+		PredecessorRelation pre = getPredecessorRelation(parent, true);
+
+		while (!queue.isEmpty()) {
+			int from = queue.poll();
+
+			for (int to : pre.getPre(from)) {
+				if (attractor.get(to)) {
+					continue;
+				}
+
+				if (getPlayer(to) == player) {
+					if (attractor.get(from)) {
+						queue.add(to);
+						attractor.set(to);
+					}
+				} else {
+					outdegree.put(to, outdegree.get(to) - 1);
+					if (outdegree.get(to) == 0) {
+						queue.add(to);
+						attractor.set(to);
+					}
+				}
+			}
+		}
+
+		return attractor;
+	}
+
 }

@@ -1,0 +1,20 @@
+// Randomly generated game using PGSolver
+// by Oliver Friedmann and Martin Lange
+
+<<P0>> (F "target");
+
+<<P1>> (F "target");
+
+
+
+// Tests:
+
+// RESULT: ?
+"p0win": <<P0>> (F "target")
+// RESULT: true
+filter(forall, "p0win" <=> (s=3|s=4|s=5|s=6|s=7|s=8));
+
+// RESULT: ?
+"p1win": <<P1>> (F "target")
+// RESULT: true
+filter(forall, "p0win" <=> (s=0|s=1|s=2));
