@@ -1,29 +1,3 @@
-//==============================================================================
-//	
-//	Copyright (c) 2016-
-//	Authors:
-//	* Joachim Klein <klein@tcs.inf.tu-dresden.de> (TU Dresden)
-//	
-//------------------------------------------------------------------------------
-//	
-//	This file is part of PRISM.
-//	
-//	PRISM is free software; you can redistribute it and/or modify
-//	it under the terms of the GNU General Public License as published by
-//	the Free Software Foundation; either version 2 of the License, or
-//	(at your option) any later version.
-//	
-//	PRISM is distributed in the hope that it will be useful,
-//	but WITHOUT ANY WARRANTY; without even the implied warranty of
-//	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//	GNU General Public License for more details.
-//	
-//	You should have received a copy of the GNU General Public License
-//	along with PRISM; if not, write to the Free Software Foundation,
-//	Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-//	
-//==============================================================================
-
 package acceptance;
 
 import java.io.PrintStream;
@@ -34,8 +8,8 @@ import prism.PrismNotSupportedException;
 import jdd.JDDVars;
 
 /**
- * A Parity acceptance condition. Is accepting if 
- * "the minimal/maximal priority visited infinitely often is even/odd"
+ * A Parity acceptance condition. The acceptance condition is accepting if 
+ * "the minimal/maximal priority visited infinitely often is even/odd".
  */
 public class AcceptanceParity implements AcceptanceOmega
 {
@@ -231,24 +205,20 @@ public class AcceptanceParity implements AcceptanceOmega
 		if (objective == Objective.MIN) {
 			out.print(createPriorityString(0));
 			for (int i = 1; i < maxPriority; i++) {
-				out.print(joinPriorityString(i));
+				String parens = i != maxPriority - 1 ? "(" : "";
+				out.print(isAccepting(i) ? " & " + parens + createPriorityString(i) : " | " + parens + createPriorityString(i));
 			}
 		} else {
 			out.print(createPriorityString(maxPriority - 1));
 			for (int i = maxPriority - 2; i >= 0; i--) {
-				out.print(joinPriorityString(i));
+				String parens = i != 0 ? "(" : "";
+				out.print(isAccepting(i) ? " & " + parens + createPriorityString(i) : " | " + parens + createPriorityString(i));
 			}
 		}
 		for (int i = 0; i < maxPriority - 2; i++) {
 			out.print(")");
 		}
 		out.println();
-	}
-
-	private String joinPriorityString(int priority)
-	{
-		String parens = priority != maxPriority - 1 ? "(" : "";
-		return isAccepting(priority) ? " & " + parens + createPriorityString(priority) : " | " + parens + createPriorityString(priority);
 	}
 
 	private String createPriorityString(int priority)
