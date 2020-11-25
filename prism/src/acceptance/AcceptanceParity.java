@@ -39,31 +39,31 @@ import jdd.JDDVars;
  */
 public class AcceptanceParity implements AcceptanceOmega
 {
-	/** The definition i.e. min or max */
-	private Defn defn;
+	/** The objective i.e. min or max */
+	private Objective objective;
 	/** The parity i.e. even or odd */
 	private Parity parity;
-	/** The priority */
-	private int priority;
+	/** The maximal priority */
+	private int maxPriority;
 
 	/** Constructor */
-	public AcceptanceParity(Defn defn, Parity parity, int priority)
+	public AcceptanceParity(Objective defn, Parity parity, int maxPriority)
 	{
-		this.defn = defn;
+		this.objective = defn;
 		this.parity = parity;
-		this.priority = priority;
+		this.maxPriority = maxPriority;
 	}
 
-	/** Get the definition */
-	public Defn getDefn()
+	/** Get the objective */
+	public Objective getDefn()
 	{
-		return defn;
+		return objective;
 	}
 
-	/** Set the definition */
-	public void setDefn(Defn defn)
+	/** Set the objective */
+	public void setDefn(Objective objective)
 	{
-		this.defn = defn;
+		this.objective = objective;
 	}
 
 	/** Get the parity */
@@ -78,66 +78,28 @@ public class AcceptanceParity implements AcceptanceOmega
 		this.parity = parity;
 	}
 
-	/** Get the priority */
-	public int getPriority()
+	/** Get the maximal priority */
+	public int getMaxPriority()
 	{
-		return priority;
+		return maxPriority;
 	}
 
-	/** Set the priority */
-	public void setPriority(int priority)
+	/** Set the maximal priority */
+	public void setPriority(int maxPriority)
 	{
-		this.priority = priority;
+		this.maxPriority = maxPriority;
 	}
 
 	/** Make a copy of the acceptance condition. */
 	public AcceptanceParity clone()
 	{
-		return new AcceptanceParity(defn, parity, priority);
+		return new AcceptanceParity(objective, parity, maxPriority);
 	}
 
 	@Override
 	public boolean isBSCCAccepting(BitSet bscc_states)
 	{
-	}
-
-	/**
-	 * Get the Rabin acceptance condition that is the equivalent of this Parity condition.
-	 */
-	public AcceptanceRabin toRabin(int numStates)
-	{
-	}
-
-	/**
-	 * Get the Streett acceptance condition that is the equivalent of this Parity condition.
-	 */
-	public AcceptanceStreett toStreett(int numStates)
-	{
-	}
-
-	/**
-	 * Get a Rabin acceptance condition that is the complement of this condition, i.e.,
-	 * any word that is accepted by this condition is rejected by the returned Rabin condition.
-	 *
-	 * @param numStates the number of states in the underlying model / automaton (needed for complementing BitSets)
-	 * @return the complement Rabin acceptance condition
-	 */
-	public AcceptanceRabin complementToRabin(int numStates)
-	{
-	}
-
-	/**
-	 * Get a Streett acceptance condition that is the complement of this condition, i.e.,
-	 * any word that is accepted by this condition is rejected by the returned Streett condition.
-	 * <br>
-	 * Relies on the fact that once the goal states have been reached, all subsequent states
-	 * are goal states.
-	 *
-	 * @param numStates the number of states in the underlying model / automaton (needed for complementing BitSets)
-	 * @return the complement Streett acceptance condition
-	 */
-	public AcceptanceStreett complementToStreett(int numStates)
-	{
+		return false;
 	}
 
 	/** Complement this acceptance condition, return as AcceptanceGeneric. */
@@ -149,11 +111,7 @@ public class AcceptanceParity implements AcceptanceOmega
 	@Override
 	public AcceptanceOmega complement(int numStates, AcceptanceType... allowedAcceptance) throws PrismException
 	{
-		if (AcceptanceType.contains(allowedAcceptance, AcceptanceType.RABIN)) {
-			return complementToRabin(numStates);
-		} else if (AcceptanceType.contains(allowedAcceptance, AcceptanceType.STREETT)) {
-			return complementToStreett(numStates);
-		} else if (AcceptanceType.contains(allowedAcceptance, AcceptanceType.GENERIC)) {
+		if (AcceptanceType.contains(allowedAcceptance, AcceptanceType.GENERIC)) {
 			return complementToGeneric();
 		}
 		throw new PrismNotSupportedException("Can not complement " + getType() + " acceptance to a supported acceptance type");
@@ -167,37 +125,77 @@ public class AcceptanceParity implements AcceptanceOmega
 	@Override
 	public AcceptanceBuchiDD toAcceptanceDD(JDDVars ddRowVars)
 	{
-		return new AcceptanceBuchiDD(this, ddRowVars);
+		return null;
 	}
 
 	@Override
 	public AcceptanceGeneric toAcceptanceGeneric()
 	{
+		if (maxPriority == 0) {
+			return new AcceptanceGeneric(emptyIsAccepting());
+		}
+		AcceptanceGeneric acceptanceGeneric = null;
+		if (objective == Objective.MIN) {
+			acceptanceGeneric = createPriority(0);
+			for (int i = 1; i < maxPriority; i++) {
+				acceptanceGeneric = isAccepting(i) ? new AcceptanceGeneric(AcceptanceGeneric.ElementType.AND, acceptanceGeneric, createPriority(i))
+						: new AcceptanceGeneric(AcceptanceGeneric.ElementType.OR, acceptanceGeneric, createPriority(i));
+			}
+		} else {
+			acceptanceGeneric = createPriority(maxPriority - 1);
+			for (int i = maxPriority - 2; i >= 0; i--) {
+				acceptanceGeneric = isAccepting(i) ? new AcceptanceGeneric(AcceptanceGeneric.ElementType.AND, acceptanceGeneric, createPriority(i))
+						: new AcceptanceGeneric(AcceptanceGeneric.ElementType.OR, acceptanceGeneric, createPriority(i));
+			}
+		}
+		return acceptanceGeneric;
+	}
+
+	public boolean isAccepting(int priority)
+	{
+		return priority % 2 == 0 ? parity == Parity.EVEN : parity == Parity.ODD;
+	}
+
+	public boolean emptyIsAccepting()
+	{
+		return (objective == Objective.MIN && parity == Parity.EVEN) || (objective == Objective.MAX && parity == Parity.ODD);
+	}
+
+	private AcceptanceGeneric createPriority(int priority)
+	{
+		BitSet state = new BitSet();
+		state.set(priority);
+		return isAccepting(priority) ? new AcceptanceGeneric(AcceptanceGeneric.ElementType.INF, state)
+				: new AcceptanceGeneric(AcceptanceGeneric.ElementType.FIN, state);
 	}
 
 	@Override
 	public String getSignatureForState(int i)
 	{
-		return "";
+		return isAccepting(i) ? "!" : " ";
 	}
 
 	@Override
 	public String getSignatureForStateHOA(int stateIndex)
 	{
-		return "";
+		return isAccepting(stateIndex) ? "{" + stateIndex + "}" : "";
 	}
 
 	/** Returns a textual representation of this acceptance condition. */
 	@Override
 	public String toString()
 	{
-		return "";
+		String result = "";
+		result += "Objective: " + objective.toString();
+		result += "Parity: " + parity.toString();
+		result += "Maximal Priority: " + maxPriority;
+		return result;
 	}
 
 	@Override
 	public String getSizeStatistics()
 	{
-		return "";
+		return "Maximal Priority: " + maxPriority;
 	}
 
 	@Override
@@ -223,16 +221,67 @@ public class AcceptanceParity implements AcceptanceOmega
 	@Override
 	public void outputHOAHeader(PrintStream out)
 	{
-		out.println("acc-name: parity " + defn.name().toLowerCase() + " " + parity.name().toLowerCase() + " " + priority);
-		//		out.println("Acceptance: 1 Inf(0)");
+		out.println("acc-name: parity " + objective.toString() + " " + parity.toString() + " " + maxPriority);
+		out.print("Acceptance: " + maxPriority + " ");
+		if (maxPriority == 0) {
+			out.println(emptyIsAccepting() ? "t" : "f");
+			return;
+		}
+
+		if (objective == Objective.MIN) {
+			out.print(createPriorityString(0));
+			for (int i = 1; i < maxPriority; i++) {
+				out.print(joinPriorityString(i));
+			}
+		} else {
+			out.print(createPriorityString(maxPriority - 1));
+			for (int i = maxPriority - 2; i >= 0; i--) {
+				out.print(joinPriorityString(i));
+			}
+		}
+		for (int i = 0; i < maxPriority - 2; i++) {
+			out.print(")");
+		}
+		out.println();
 	}
 
-	public enum Defn {
+	private String joinPriorityString(int priority)
+	{
+		String parens = priority != maxPriority - 1 ? "(" : "";
+		return isAccepting(priority) ? " & " + parens + createPriorityString(priority) : " | " + parens + createPriorityString(priority);
+	}
+
+	private String createPriorityString(int priority)
+	{
+		return isAccepting(priority) ? "Inf(" + priority + ")" : "Fin(" + priority + ")";
+	}
+
+	public enum Objective {
 		MIN, MAX;
+
+		public String toString()
+		{
+			return this == MIN ? "min" : "max";
+		}
+
+		public static Objective fromString(String str)
+		{
+			return str.equalsIgnoreCase("min") ? MIN : MAX;
+		}
 	}
 
 	public enum Parity {
 		EVEN, ODD;
+
+		public String toString()
+		{
+			return this == EVEN ? "even" : "odd";
+		}
+
+		public static Parity fromString(String str)
+		{
+			return str.equalsIgnoreCase("even") ? EVEN : ODD;
+		}
 	}
 
 }

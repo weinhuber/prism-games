@@ -388,14 +388,12 @@ public class HOAF2DA implements HOAConsumer {
 			throw new HOAConsumerException("Invalid acc-name: parity header");
 		}
 
-		String defn = (String) extraInfo.get(0);
+		String objective = (String) extraInfo.get(0);
 		String parity = (String) extraInfo.get(0);
-		int priority = (Integer) extraInfo.get(0);
+		int maxPriority = (Integer) extraInfo.get(0);
 		
 		AcceptanceParity acceptanceParity = new AcceptanceParity(
-				AcceptanceParity.Defn.valueOf(defn.toUpperCase()),
-				AcceptanceParity.Parity.valueOf(parity.toUpperCase()),
-				priority);
+				AcceptanceParity.Objective.fromString(objective), AcceptanceParity.Parity.fromString(parity), maxPriority);
 		return acceptanceParity;
 	}
 
