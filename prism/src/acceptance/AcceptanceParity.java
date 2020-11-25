@@ -47,21 +47,21 @@ public class AcceptanceParity implements AcceptanceOmega
 	private int maxPriority;
 
 	/** Constructor */
-	public AcceptanceParity(Objective defn, Parity parity, int maxPriority)
+	public AcceptanceParity(Objective objective, Parity parity, int maxPriority)
 	{
-		this.objective = defn;
+		this.objective = objective;
 		this.parity = parity;
 		this.maxPriority = maxPriority;
 	}
 
 	/** Get the objective */
-	public Objective getDefn()
+	public Objective getObjective()
 	{
 		return objective;
 	}
 
 	/** Set the objective */
-	public void setDefn(Objective objective)
+	public void setObjective(Objective objective)
 	{
 		this.objective = objective;
 	}
