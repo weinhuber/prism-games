@@ -1,10 +1,10 @@
 #! /bin/bash
 
-# Interface wrapper for calling Rabinizer4 (transition-based DPA)
+# Interface wrapper for calling Rabinizer4 (transition-based DRA)
 # Invoke from PRISM with
-#  -ltl2datool hoa-rabinizer4-dra-for-prism -ltl2dasyntax rabinizer
+#  -ltl2datool hoa-rabinizer4-dpa-for-prism -ltl2dasyntax rabinizer
 
-export RABINIZER4_SCRIPT=ltl2dra
+export RABINIZER4_SCRIPT=ltl2dpa
 
 # Expects the rabinizer script to be in the path,
 # otherwise specify its location using
