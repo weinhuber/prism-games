@@ -392,6 +392,7 @@ public class HOAF2DA implements HOAConsumer {
 		String parity = (String) extraInfo.get(1);
 		int maxPriority = (Integer) extraInfo.get(2);
 		
+		acceptanceSets = new ArrayList<BitSet>(1);
 		AcceptanceParity acceptanceParity = new AcceptanceParity(
 				AcceptanceParity.Objective.fromString(objective), AcceptanceParity.Parity.fromString(parity), maxPriority);
 		return acceptanceParity;
