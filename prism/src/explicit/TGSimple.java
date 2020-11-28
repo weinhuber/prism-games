@@ -27,10 +27,14 @@
 package explicit;
 
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Map.Entry;
+
 import prism.PlayerInfo;
 import prism.PlayerInfoOwner;
 import prism.PrismException;
@@ -210,6 +214,12 @@ public class TGSimple extends LTSSimple implements TG
 		}
 
 		return attractor;
+	}
+	
+	@Override
+	public Iterator<Entry<Integer, Double>> getTransitionsIterator(int s, int i)
+	{
+		return Collections.singletonMap(trans.get(s).get(i), 1D).entrySet().iterator();
 	}
 
 }

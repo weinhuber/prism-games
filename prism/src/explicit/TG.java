@@ -28,7 +28,10 @@ package explicit;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
+
 import explicit.graphviz.StateOwnerDecorator;
 import prism.ModelType;
 import prism.PlayerInfoOwner;
@@ -104,5 +107,10 @@ public interface TG extends LTS, PlayerInfoOwner
 	 * @param parent a PrismComponent (for obtaining the log)
 	 */
 	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent);
+	
+	/**
+	 * Get an iterator over the transitions from choice {@code i} of state {@code s}.
+	 */
+	public Iterator<Entry<Integer, Double>> getTransitionsIterator(int s, int i);
 
 }

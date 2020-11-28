@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
+import acceptance.AcceptanceType;
 import parser.ast.Coalition;
 import parser.ast.Expression;
 import parser.ast.ExpressionStrategy;
@@ -53,6 +54,30 @@ public class TGModelChecker extends NonProbModelChecker
 	}
 
 	// Model checking functions
+	
+	public StateValues checkPathFormulaLTL(Model model, Expression expr, BitSet statesOfInterest) throws PrismException
+	{
+		LTLModelChecker mcLtl;
+		StateValues probsProduct, probs;
+		LTLModelChecker.LTLProduct<TG> product;
+		TGModelChecker mcProduct;
+
+		// For LTL model checking routines
+		mcLtl = new LTLModelChecker(this);
+
+		// Build product of TG and automaton
+		AcceptanceType[] allowedAcceptance = {
+				AcceptanceType.RABIN,
+				AcceptanceType.REACH,
+				AcceptanceType.BUCHI,
+				AcceptanceType.STREETT,
+				AcceptanceType.GENERIC,
+				AcceptanceType.PARITY,
+		};
+		product = mcLtl.constructProductTG(this, (TG) model, expr, statesOfInterest, allowedAcceptance);
+		
+		return null;
+	}
 
 	@Override
 	public StateValues checkExpression(Model model, Expression expr, BitSet statesOfInterest) throws PrismException

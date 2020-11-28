@@ -94,6 +94,7 @@ public class AcceptanceParity implements AcceptanceOmega
 	@Override
 	public void lift(LiftBitSet lifter)
 	{
+		// NOP
 	}
 
 	@Override
@@ -160,8 +161,8 @@ public class AcceptanceParity implements AcceptanceOmega
 	public String toString()
 	{
 		String result = "";
-		result += "Objective: " + objective.toString();
-		result += "Parity: " + parity.toString();
+		result += "Objective: " + objective.toString() + "\n";
+		result += "Parity: " + parity.toString() + "\n";
 		result += "Maximal Priority: " + maxPriority;
 		return result;
 	}
