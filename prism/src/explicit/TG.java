@@ -31,6 +31,8 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import explicit.graphviz.StateOwnerDecorator;
 import prism.ModelType;
@@ -99,6 +101,8 @@ public interface TG extends LTS, PlayerInfoOwner
 	 */
 	public int getPlayer(int s);
 
+	public BitSet getActiveStates();
+	
 	// Attractor
 
 	/**

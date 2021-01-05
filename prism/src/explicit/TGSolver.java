@@ -17,7 +17,7 @@ public abstract class TGSolver
 	/**
 	 * Turn-based game (TG)
 	 */
-	protected final TG tg;
+	protected final TGSimple tg;
 
 	/**
 	 * Create a new TGSolver for a turn-based game (TG).
@@ -25,7 +25,7 @@ public abstract class TGSolver
 	public TGSolver(PrismComponent parent, TG tg)
 	{
 		this.parent = parent;
-		this.tg = tg;
+		this.tg = (TGSimple) tg;
 	}
 
 	/**

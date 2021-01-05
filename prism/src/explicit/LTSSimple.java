@@ -166,6 +166,16 @@ public class LTSSimple extends ModelExplicit implements LTS, NondetModelSimple
 		trans.get(s).add(t);
 		numTransitions++;
 	}
+	
+	/**
+	 * Remove a transition from state {@code s} (which must exist) to state {code t}.
+	 */
+	public void removeTransition(int s, int t)
+	{
+		// We don't care if a transition from s to t doesn't exist
+		trans.get(s).remove(Integer.valueOf(t));
+		numTransitions--;
+	}
 
 	/**
 	 * Add a transition from state {@code s} (which must exist)
@@ -294,5 +304,15 @@ public class LTSSimple extends ModelExplicit implements LTS, NondetModelSimple
 	public int getSuccessor(int s, int i)
 	{
 		return trans.get(s).get(i); 
+	}
+	
+	// Accessors (other)
+
+	/**
+	 * Does there exist a transition between state {@code s} (which must exist) to state {code t}?
+	 */
+	public boolean hasTransition(int s, int t)
+	{
+		return trans.get(s).contains(t);
 	}
 }

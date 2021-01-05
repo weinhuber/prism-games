@@ -16,7 +16,7 @@ public class SmallProgressMeasures extends PGSolver
 {
 
 	/**
-	 * Maximum priority 
+	 * Maximum priority
 	 */
 	private final int d;
 	/**
@@ -71,7 +71,7 @@ public class SmallProgressMeasures extends PGSolver
 
 	private BitSet jurdzinksi()
 	{
-		//		LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, tg);
+		// LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, tg);
 		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, tg, rho);
 		int v = liftingStrategy.next();
 
@@ -81,7 +81,6 @@ public class SmallProgressMeasures extends PGSolver
 				liftingStrategy.lifted(v);
 				rho[v] = lift;
 			}
-
 			v = liftingStrategy.next();
 		}
 
@@ -141,7 +140,7 @@ public class SmallProgressMeasures extends PGSolver
 	}
 
 	// lexicographic order
-	private boolean lessThan(int[] v, int[] w)
+	private static boolean lessThan(int[] v, int[] w)
 	{
 		if (v == null) {
 			return false;

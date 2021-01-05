@@ -26,13 +26,17 @@
 
 package explicit;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.Map.Entry;
 
 import prism.PlayerInfo;
@@ -53,6 +57,11 @@ public class TGSimple extends LTSSimple implements TG
 	 * Player + coalition information
 	 */
 	protected PlayerInfo playerInfo;
+	
+	/**
+	 * Active states
+	 */
+	protected BitSet activeStates;
 
 	// Constructors
 
@@ -64,6 +73,7 @@ public class TGSimple extends LTSSimple implements TG
 		super();
 		stateOwners = new StateOwnersSimple();
 		playerInfo = new PlayerInfo();
+		activeStates = new BitSet();
 	}
 
 	/**
@@ -74,6 +84,7 @@ public class TGSimple extends LTSSimple implements TG
 		super(numStates);
 		stateOwners = new StateOwnersSimple(numStates);
 		playerInfo = new PlayerInfo();
+		activeStates = new BitSet(numStates);
 	}
 
 	/**
@@ -84,6 +95,7 @@ public class TGSimple extends LTSSimple implements TG
 		super(tg);
 		stateOwners = new StateOwnersSimple(tg.stateOwners);
 		playerInfo = new PlayerInfo(tg.playerInfo);
+		activeStates = (BitSet) tg.activeStates.clone();
 	}
 
 	/**
@@ -96,6 +108,7 @@ public class TGSimple extends LTSSimple implements TG
 		super(tg, permut);
 		stateOwners = new StateOwnersSimple(tg.stateOwners, permut);
 		playerInfo = new PlayerInfo(tg.playerInfo);
+		activeStates = (BitSet) tg.activeStates.clone();
 	}
 
 	// Mutators
@@ -115,6 +128,7 @@ public class TGSimple extends LTSSimple implements TG
 		for (int i = 0; i < numToAdd; i++) {
 			stateOwners.addState(1);
 		}
+		activeStates.set(numStates - numToAdd, numStates);
 	}
 
 	/**
@@ -173,6 +187,12 @@ public class TGSimple extends LTSSimple implements TG
 		return playerInfo.getPlayer(stateOwners.getPlayer(s));
 	}
 
+	@Override
+	public BitSet getActiveStates()
+	{
+		return activeStates;
+	}
+	
 	// Attractor
 
 	@Override
@@ -220,6 +240,55 @@ public class TGSimple extends LTSSimple implements TG
 	public Iterator<Entry<Integer, Double>> getTransitionsIterator(int s, int i)
 	{
 		return Collections.singletonMap(trans.get(s).get(i), 1D).entrySet().iterator();
+	}
+	
+	public TGSimple subgameByStateList(Collection<Integer> states)
+	{
+		return subgameByStateFilter(s -> states.contains(s));
+	}
+
+	public TGSimple subgameByStateFilter(Predicate<Integer> pred)
+	{
+		TGSimple tg = new TGSimple(numStates);
+
+		activeStates.stream().forEach(s -> {
+			if (pred.test(s)) {
+				tg.trans.set(s, new ArrayList<>());
+				tg.setPlayer(s, getPlayer(s));
+				tg.activeStates.set(s);
+
+				SuccessorsIterator successors = getSuccessors(s);
+				while (successors.hasNext()) {
+					int succ = successors.next();
+					if (pred.test(succ)) {
+						tg.addTransition(s, succ);
+					}
+				}
+			}
+		});
+
+		return tg;
+	}
+
+	public TGSimple subgameByEdgeFilter(BiPredicate<Integer, Integer> pred)
+	{
+		TGSimple tg = new TGSimple(numStates);
+
+		activeStates.stream().forEach(s -> {
+			tg.trans.set(s, new ArrayList<>());
+			tg.setPlayer(s, getPlayer(s));
+			tg.activeStates.set(s);
+			
+			SuccessorsIterator successors = getSuccessors(s);
+			while (successors.hasNext()) {
+				int succ = successors.next();
+				if (pred.test(s, succ)) {
+					tg.addTransition(s, succ);
+				}
+			}
+		});
+
+		return tg;
 	}
 
 }
