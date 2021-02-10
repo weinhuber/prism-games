@@ -54,7 +54,7 @@ public class TGModelChecker extends NonProbModelChecker
 	}
 
 	// Model checking functions
-	
+
 	public StateValues checkPathFormulaLTL(Model model, Expression expr, BitSet statesOfInterest) throws PrismException
 	{
 		LTLModelChecker mcLtl;
@@ -66,16 +66,10 @@ public class TGModelChecker extends NonProbModelChecker
 		mcLtl = new LTLModelChecker(this);
 
 		// Build product of TG and automaton
-		AcceptanceType[] allowedAcceptance = {
-				AcceptanceType.RABIN,
-				AcceptanceType.REACH,
-				AcceptanceType.BUCHI,
-				AcceptanceType.STREETT,
-				AcceptanceType.GENERIC,
-				AcceptanceType.PARITY,
-		};
+		AcceptanceType[] allowedAcceptance = { AcceptanceType.RABIN, AcceptanceType.REACH, AcceptanceType.BUCHI, AcceptanceType.STREETT, AcceptanceType.GENERIC,
+				AcceptanceType.PARITY, };
 		product = mcLtl.constructProductTG(this, (TG) model, expr, statesOfInterest, allowedAcceptance);
-		
+
 		return null;
 	}
 
@@ -168,27 +162,27 @@ public class TGModelChecker extends NonProbModelChecker
 	{
 		List<Integer> priorities = new ArrayList<>();
 		// Priorities for fig3_1
-		priorities.add(4);
-		priorities.add(3);
-		priorities.add(2);
-		priorities.add(1);
-		priorities.add(0);
-		priorities.add(1);
-		priorities.add(2);
-		priorities.add(3);
-		priorities.add(0);
+		//		priorities.add(4);
+		//		priorities.add(3);
+		//		priorities.add(2);
+		//		priorities.add(1);
+		//		priorities.add(0);
+		//		priorities.add(1);
+		//		priorities.add(2);
+		//		priorities.add(3);
+		//		priorities.add(0);
 		// Priorities for random1
-//		priorities.add(9);
-//		priorities.add(7);
-//		priorities.add(1);
-//		priorities.add(10);
-//		priorities.add(2);
-//		priorities.add(11);
-//		priorities.add(9);
-//		priorities.add(9);
-//		priorities.add(12);
-//		priorities.add(6);
-		System.out.println("Parity " + computeParity(tg, priorities));
+		priorities.add(9);
+		priorities.add(7);
+		priorities.add(1);
+		priorities.add(10);
+		priorities.add(2);
+		priorities.add(11);
+		priorities.add(9);
+		priorities.add(9);
+		priorities.add(12);
+		priorities.add(6);
+		System.out.println("Parity " + computeParity(new PG(tg, priorities)));
 
 		return new RGSolver(this, tg, target).solve();
 	}
@@ -198,10 +192,10 @@ public class TGModelChecker extends NonProbModelChecker
 	 * @param tg 2-player TG
 	 * @param priorities List of priorities
 	 */
-	protected BitSet computeParity(TG tg, List<Integer> priorities) throws PrismException
+	protected BitSet computeParity(PG pg) throws PrismException
 	{
-//				return new ZielonkaRecursive(this, tg, priorities).solve();
-//				return new SmallProgressMeasures(this, tg, priorities).solve();
-		return new DiscreteStrategyImprovement(this, tg, priorities).solve();
+		System.out.println(pg.tg.getPlayer(0));
+		//		return new ZielonkaRecursive(this, pg).solve();
+		return new SmallProgressMeasures(this, pg).solve();
 	}
 }

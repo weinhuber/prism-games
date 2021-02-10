@@ -2,7 +2,6 @@ package explicit;
 
 import java.util.BitSet;
 import java.util.Collections;
-import java.util.List;
 
 import prism.PrismComponent;
 
@@ -15,68 +14,44 @@ public class ZielonkaRecursive extends PGSolver
 	/**
 	 * Create a new parity game solver.
 	 */
-	public ZielonkaRecursive(PrismComponent parent, TG tg, List<Integer> priorities)
+	public ZielonkaRecursive(PrismComponent parent, PG pg)
 	{
-		super(parent, tg, priorities);
-	}
-
-	/**
-	 * Copy constructor.
-	 */
-	public ZielonkaRecursive(ZielonkaRecursive zielonkaRecursive)
-	{
-		super(zielonkaRecursive);
+		super(parent, pg);
 	}
 
 	@Override
 	public BitSet solve()
 	{
-		return zielonka().w1;
+		return zielonka(pg).w1;
 	}
 
-	private WinningRegions zielonka()
+	private WinningRegions zielonka(PG pg)
 	{
 		WinningRegions W = new WinningRegions();
-		if (tg.getNumTransitions() == 0) {
+		if (pg.tg.getActiveStates().isEmpty()) {
 			return W;
 		}
 
-		int d = Collections.max(priorities);
-		BitSet U = priorityMap.get(d);
+		int d = Collections.max(pg.priorities);
+		BitSet U = pg.priorityMap.get(d);
 		int p = d % 2 == 0 ? 1 : 2;
 		int j = p == 1 ? 2 : 1;
-		BitSet A = tg.attractor(p, U, parent);
-		WinningRegions W1 = difference(A).zielonka();
+		BitSet A = pg.tg.attractor(p, U, parent);
+		WinningRegions W1 = zielonka(pg.difference(A));
 
 		if (W1.get(j).isEmpty()) {
 			W1.get(p).or(A);
 			W.set(p, W1.get(p));
 			W.set(j, new BitSet());
 		} else {
-			BitSet B = tg.attractor(j, W1.get(j), parent);
-			W1 = difference(B).zielonka();
+			BitSet B = pg.tg.attractor(j, W1.get(j), parent);
+			W1 = zielonka(pg.difference(B));
 			W.set(p, W1.get(p));
 			W1.get(j).or(B);
 			W.set(j, W1.get(j));
 		}
 
 		return W;
-	}
-
-	private ZielonkaRecursive difference(BitSet A)
-	{
-		ZielonkaRecursive copy = new ZielonkaRecursive(this);
-
-		A.stream().forEach(s -> {
-			((TGSimple) copy.tg).clearState(s);
-			copy.priorities.set(s, -1);
-			copy.priorityMap.computeIfPresent(copy.priorities.get(s), (k, v) -> {
-				v.clear(s);
-				return v.isEmpty() ? null : v;
-			});
-		});
-
-		return copy;
 	}
 
 }

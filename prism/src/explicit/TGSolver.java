@@ -29,15 +29,6 @@ public abstract class TGSolver
 	}
 
 	/**
-	 * Copy constructor.
-	 */
-	public TGSolver(TGSolver tgSolver)
-	{
-		this.parent = tgSolver.parent;
-		this.tg = new TGSimple((TGSimple) tgSolver.tg);
-	}
-
-	/**
 	 * Compute the solution as player 1 (1-indexed).
 	 */
 	public abstract BitSet solve();

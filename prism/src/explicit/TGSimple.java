@@ -28,16 +28,14 @@ package explicit;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.function.Predicate;
 
 import prism.PlayerInfo;
 import prism.PlayerInfoOwner;
@@ -57,7 +55,7 @@ public class TGSimple extends LTSSimple implements TG
 	 * Player + coalition information
 	 */
 	protected PlayerInfo playerInfo;
-	
+
 	/**
 	 * Active states
 	 */
@@ -192,23 +190,23 @@ public class TGSimple extends LTSSimple implements TG
 	{
 		return activeStates;
 	}
-	
+
 	// Attractor
 
 	@Override
 	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent)
 	{
 		Map<Integer, Integer> outdegree = new HashMap<>();
-		for (int i = 0; i < getNumStates(); i++) {
-			if (getPlayer(i) != player) {
-				outdegree.put(i, getNumTransitions(i));
+		getActiveStates().stream().forEach(s -> {
+			if (getPlayer(s) != player) {
+				outdegree.put(s, getNumTransitions(s));
 			}
-		}
+		});
 
 		Queue<Integer> queue = new LinkedList<Integer>();
 		target.stream().forEach(s -> queue.add(s));
 		BitSet attractor = (BitSet) target.clone();
-		PredecessorRelation pre = getPredecessorRelation(parent, true);
+		PredecessorRelation pre = getPredecessorRelation(parent, false);
 
 		while (!queue.isEmpty()) {
 			int from = queue.poll();
@@ -235,19 +233,20 @@ public class TGSimple extends LTSSimple implements TG
 
 		return attractor;
 	}
-	
+
 	@Override
-	public Iterator<Entry<Integer, Double>> getTransitionsIterator(int s, int i)
+	public TG subgame(BitSet states)
 	{
-		return Collections.singletonMap(trans.get(s).get(i), 1D).entrySet().iterator();
-	}
-	
-	public TGSimple subgameByStateList(Collection<Integer> states)
-	{
-		return subgameByStateFilter(s -> states.contains(s));
+		return subgameByStateFilter(s -> states.get(s));
 	}
 
-	public TGSimple subgameByStateFilter(Predicate<Integer> pred)
+	@Override
+	public TG difference(BitSet states)
+	{
+		return subgameByStateFilter(s -> !states.get(s));
+	}
+
+	private TG subgameByStateFilter(Predicate<Integer> pred)
 	{
 		TGSimple tg = new TGSimple(numStates);
 
@@ -270,25 +269,10 @@ public class TGSimple extends LTSSimple implements TG
 		return tg;
 	}
 
-	public TGSimple subgameByEdgeFilter(BiPredicate<Integer, Integer> pred)
+	@Override
+	public Iterator<Entry<Integer, Double>> getTransitionsIterator(int s, int i)
 	{
-		TGSimple tg = new TGSimple(numStates);
-
-		activeStates.stream().forEach(s -> {
-			tg.trans.set(s, new ArrayList<>());
-			tg.setPlayer(s, getPlayer(s));
-			tg.activeStates.set(s);
-			
-			SuccessorsIterator successors = getSuccessors(s);
-			while (successors.hasNext()) {
-				int succ = successors.next();
-				if (pred.test(s, succ)) {
-					tg.addTransition(s, succ);
-				}
-			}
-		});
-
-		return tg;
+		return Collections.singletonMap(trans.get(s).get(i), 1D).entrySet().iterator();
 	}
 
 }

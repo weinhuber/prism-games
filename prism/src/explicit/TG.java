@@ -31,8 +31,6 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import explicit.graphviz.StateOwnerDecorator;
 import prism.ModelType;
@@ -111,6 +109,10 @@ public interface TG extends LTS, PlayerInfoOwner
 	 * @param parent a PrismComponent (for obtaining the log)
 	 */
 	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent);
+	
+	public TG subgame(BitSet states);
+	
+	public TG difference(BitSet states);
 	
 	/**
 	 * Get an iterator over the transitions from choice {@code i} of state {@code s}.

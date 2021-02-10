@@ -116,13 +116,13 @@ public class PredecessorRelation
 	{
 		long timer = System.currentTimeMillis();
 		
-//		parent.getLog().print("Calculating predecessor relation for "+model.getModelType().fullName()+"...  ");
-//		parent.getLog().flush();
+		parent.getLog().print("Calculating predecessor relation for "+model.getModelType().fullName()+"...  ");
+		parent.getLog().flush();
 
 		PredecessorRelation pre = new PredecessorRelation(model);
 		
-//		timer = System.currentTimeMillis() - timer;
-//		parent.getLog().println("done (" + timer / 1000.0 + " seconds)");
+		timer = System.currentTimeMillis() - timer;
+		parent.getLog().println("done (" + timer / 1000.0 + " seconds)");
 
 		return pre;
 	}

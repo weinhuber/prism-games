@@ -1,6 +1,7 @@
 package explicit;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,6 +12,7 @@ import prism.PrismComponent;
 
 /**
  * Solve parity games using the small progress measures algorithm.
+ * We treat null as our T. 
  */
 public class SmallProgressMeasures extends PGSolver
 {
@@ -22,7 +24,7 @@ public class SmallProgressMeasures extends PGSolver
 	/**
 	 * Even upper bound for the maximum priority d
 	 */
-	private final int p;
+	private int p;
 	/**
 	 * Number of states for a priority
 	 */
@@ -35,26 +37,26 @@ public class SmallProgressMeasures extends PGSolver
 	 * Vector comparator for lexicographic order
 	 */
 	private final Comparator<int[]> vectorComparator = (v, w) -> {
-		if (v == w) {
-			return 0;
-		}
 		if (lessThan(v, w)) {
 			return -1;
 		}
-		return 1;
+		if (lessThan(w, v)) {
+			return 1;
+		}
+		return 0;
 	};
 
 	/**
 	 * Create a new parity game solver.
 	 */
-	public SmallProgressMeasures(PrismComponent parent, TG tg, List<Integer> priorities)
+	public SmallProgressMeasures(PrismComponent parent, PG pg)
 	{
-		super(parent, tg, priorities);
-		this.d = Collections.max(priorities);
+		super(parent, pg);
+		this.d = Collections.max(pg.priorities);
 		this.p = d + (d % 2);
 		this.rho = new int[tg.getNumStates()][d + 1];
 		this.max = new int[d + 1];
-		for (Map.Entry<Integer, BitSet> entry : priorityMap.entrySet()) {
+		for (Map.Entry<Integer, BitSet> entry : pg.priorityMap.entrySet()) {
 			max[entry.getKey()] = entry.getValue().cardinality();
 		}
 	}
@@ -107,36 +109,42 @@ public class SmallProgressMeasures extends PGSolver
 		} else {
 			prog = Collections.max(progs, vectorComparator);
 		}
+		prog = Collections.max(Arrays.asList(rho[v], prog), vectorComparator);
 
 		return prog;
 	}
 
 	private int[] prog(int v, int w)
 	{
-		int[] rhoW = rho[w];
-		if (rhoW == null) {
+		if (rho[w] == null) {
 			return null;
 		}
-		rhoW = rhoW.clone();
-		int vPriority = priorities.get(v);
+		int[] rhoV = rho[w].clone();
+		int vPriority = pg.priorities.get(v);
 
-		if ((p - vPriority) % 2 == 0) { // player 1
-			for (int i = (p - vPriority) + 1; i < rhoW.length; i += 2) {
-				rhoW[i] = 0;
-			}
-			return rhoW;
-		} else { // player 2
-			for (int i = (p - vPriority); i >= 0; i -= 2) {
-				if (rhoW[i] < max[i]) {
-					rhoW[i] = rhoW[i] + 1;
-					for (int j = i + 2; j < rhoW.length; j += 2) {
-						rhoW[j] = 0;
-					}
-					return rhoW;
-				}
-			}
+		for (int i = (p - vPriority) + 1; i < rhoV.length; i++) {
+			rhoV[i] = 0;
+		}
+		if ((p - vPriority) % 2 != 0) {
+			rhoV = increment(rhoV, p - vPriority);
+		}
+
+		return rhoV;
+	}
+
+	private int[] increment(int[] prog, int i)
+	{
+		if (i == 1 && prog[1] == max[1]) {
 			return null;
 		}
+
+		if (prog[i] + 1 > max[i]) {
+			return increment(prog, i - 2);
+		} else {
+			prog[i] = prog[i] + 1;
+		}
+
+		return prog;
 	}
 
 	// lexicographic order
