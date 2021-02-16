@@ -321,4 +321,85 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
+	// Utility functions
+	
+	public static void replaceMissingPriorities(List<Integer> priorities, Objective objective)
+	{
+		// Add a dummy priority if some are missing
+		if (priorities.contains(-1)) {
+			int n = priorities.size();
+			if (objective == AcceptanceParity.Objective.MIN) {
+				int maxPriority = maxPriority(priorities);
+				for (int s = 0; s < n; s++) {
+					if (priorities.get(s) == -1) {
+						priorities.set(s, maxPriority + 1);
+					}
+				}
+			} else {
+				int minPriority = minPriority(priorities);
+				for (int s = 0; s < n; s++) {
+					if (priorities.get(s) == -1) {
+						priorities.set(s, 0);
+					} else {
+						priorities.set(s, priorities.get(s) + 1);
+					}
+				}
+			}
+		}
+	}
+	
+	public static void convertPrioritiesToEven(List<Integer> priorities, Parity parity)
+	{
+		if (parity == AcceptanceParity.Parity.ODD) {
+			int n = priorities.size();
+			for (int s = 0; s < n; s++) {
+				priorities.set(s, priorities.get(s) + 1);
+			}
+			shiftPiorities(priorities);
+		}
+	}
+	
+	public static void convertPrioritiesToMax(List<Integer> priorities, Objective objective)
+	{
+		if (objective == AcceptanceParity.Objective.MIN) {
+			int d = maxPriority(priorities);
+			if (d % 2 == 1) {
+				d++;
+			}
+			int n = priorities.size();
+			for (int s = 0; s < n; s++) {
+				priorities.set(s, d - priorities.get(s));
+			}
+			shiftPiorities(priorities);
+		}
+	}
+	
+	public static void shiftPiorities(List<Integer> priorities)
+	{
+		// Shift so min is 0 or 1
+		int minPriority = minPriority(priorities);
+		int shift = minPriority % 2 == 0 ? -minPriority : 1 - minPriority;
+		int n = priorities.size();
+		for (int s = 0; s < n; s++) {
+			priorities.set(s, priorities.get(s) + shift);
+		}
+	}
+	
+	public static int minPriority(List<Integer> priorities)
+	{
+		int minPriority = Integer.MAX_VALUE;
+		for (int p : priorities) {
+			minPriority = Math.min(minPriority, p);
+		}
+		return minPriority;
+	}
+	
+	public static int maxPriority(List<Integer> priorities)
+	{
+		int maxPriority = Integer.MIN_VALUE;
+		for (int p : priorities) {
+			maxPriority = Math.max(maxPriority, p);
+		}
+		return maxPriority;
+	}
 }
