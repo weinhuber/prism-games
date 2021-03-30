@@ -660,6 +660,7 @@ public class LTLModelChecker extends PrismComponent
 				break;
 			case TG: 
 				((TGSimple) prodModel).addState(((TG) model).getPlayer(s_0));
+				break;
 			default:
 				prodModel.addState();
 			break;
@@ -735,6 +736,7 @@ public class LTLModelChecker extends PrismComponent
 							break;
 						case TG:
 							((TGSimple) prodModel).addState(((TG) model).getPlayer(s_2));
+							break;
 						default:
 							prodModel.addState();
 							break;
@@ -775,7 +777,8 @@ public class LTLModelChecker extends PrismComponent
 					((SMGSimple) prodModel).addActionLabelledChoice(map[s_1 * daSize + q_1], prodDistr, ((SMG) model).getAction(s_1, j));
 					break;
 				case TG:
-					((TGSimple) prodModel).addActionLabelledTransition(s_1 * daSize + q_1, prodDistr.sampleFromDistribution(), ((TG) model).getAction(s_1, j));
+					((TGSimple) prodModel).addActionLabelledTransition(map[s_1 * daSize + q_1], prodDistr.sampleFromDistribution(), ((TG) model).getAction(s_1, j));
+					break;
 				default:
 					break;
 				}
