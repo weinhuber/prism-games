@@ -1,12 +1,9 @@
 package explicit;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import prism.Pair;
 import prism.PrismComponent;
@@ -49,7 +46,8 @@ public class PriorityPromotion extends PGSolver
 		int p = Collections.max(pg.priorities);
 
 		while (true) {
-			int alpha = p % 2;
+			int alpha = p % 2 == 0 ? 1 : 2;
+            int alphaBar = alpha == 1 ? 2 : 1;
 
 			int finalP = p;
 
@@ -69,44 +67,43 @@ public class PriorityPromotion extends PGSolver
 			BitSet Z = pg.tg.subgame(Subgame).attractor(alpha, A, parent);
 			BitSet finalZ = Z;
 
-//			BitSet Open = Z.stream().filter(s -> pg.tg.getPlayer(s) == alpha && !pg.tg.someSuccessorsInSet(s,  finalZ);
-//			}).collect(Collectors.toSet());
-//
-//			Set<Integer> Esc = Z.stream()
-//					.filter(node -> G.nodes.get(node).player == 1 - alpha)
-//					.map(node -> G.nodes.get(node).successors)
-//					.flatMap(Set::stream)
-//					.filter(node -> !finalZ.contains(node))
-//					.collect(Collectors.toSet());
-//
-//			Set<Integer> t = new HashSet<>(Esc);
-//			t.retainAll(Subgame);
-//			if (!Open.isEmpty() || !t.isEmpty()) {
-//				Z.stream().forEach(s -> r.put(s, p));
-//				p = Subgame.stream()
-//								.filter(s -> !finalZ.get(s))
-//								.map(s -> pg.priorities.get(s))
-//								.max().getAsInt();
-//			} else if (!Esc.isEmpty()) {
-//				p = Collections.min(r.entrySet().stream()
-//						.filter(entry -> Esc.contains(entry.getKey()))
-//						.map(Map.Entry::getValue)
-//						.collect(Collectors.toSet()));
-//
-//				for (int node : Z) {
-//					r.put(node, p);
-//				}
-//				int finalP1 = p;
-//				for (int node : r.entrySet().stream()
-//						.filter(entry -> entry.getValue() < finalP1)
-//						.map(Map.Entry::getKey)
-//						.collect(Collectors.toSet())) {
-//					r.put(node, -1);
-//				}
-//			} else {
-//				Z = pg.tg.attractor(alpha, Z, parent);
-//				return new Pair<>(alpha, Z);
-//			}
+			BitSet Open = Z.stream()
+					.filter(s -> pg.tg.getPlayer(s) == alpha && !pg.tg.someSuccessorsInSet(s, finalZ))
+					.collect(BitSet::new, BitSet::set,BitSet::or);
+
+			BitSet Esc = Z.stream()
+					.filter(s -> pg.tg.getPlayer(s) == alphaBar)
+					.flatMap(s -> pg.tg.getSuccessors(s).stream())
+					.filter(s -> !finalZ.get(s))
+					.collect(BitSet::new, BitSet::set, BitSet::or);
+
+			BitSet EscAndSubgame = (BitSet) Esc.clone();
+			EscAndSubgame.and(Subgame);
+
+			if (!Open.isEmpty() || !EscAndSubgame.isEmpty()) {
+				int finalP1 = p;
+				Z.stream().forEach(s -> r.put(s, finalP1));
+
+				p = Subgame.stream()
+						.filter(s -> !finalZ.get(s))
+						.map(s -> pg.priorities.get(s))
+						.max().getAsInt();
+			} else if (!Esc.isEmpty()) {
+				p = r.entrySet().stream()
+						.filter(entry -> Esc.get(entry.getKey()))
+						.map(Map.Entry::getValue)
+						.min(Integer::compare).get();
+				int finalP1 = p;
+
+				Z.stream().forEach(s -> r.put(s, finalP1));
+				r.entrySet().stream()
+				.filter(entry -> entry.getValue() < finalP1)
+				.map(Map.Entry::getKey)
+				.forEach(s -> r.put(s, -1));
+			} else {
+				Z = pg.tg.attractor(alpha, Z, parent);
+				return new Pair<>(alpha, Z);
+			}
 		}
 	}
 

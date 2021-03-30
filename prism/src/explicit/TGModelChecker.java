@@ -162,15 +162,15 @@ public class TGModelChecker extends NonProbModelChecker
 	{
 		List<Integer> priorities = new ArrayList<>();
 		// Priorities for fig3_1
-		//		priorities.add(4);
-		//		priorities.add(3);
-		//		priorities.add(2);
-		//		priorities.add(1);
-		//		priorities.add(0);
-		//		priorities.add(1);
-		//		priorities.add(2);
-		//		priorities.add(3);
-		//		priorities.add(0);
+//				priorities.add(4);
+//				priorities.add(3);
+//				priorities.add(2);
+//				priorities.add(1);
+//				priorities.add(0);
+//				priorities.add(1);
+//				priorities.add(2);
+//				priorities.add(3);
+//				priorities.add(0);
 		// Priorities for random1
 		priorities.add(9);
 		priorities.add(7);
@@ -194,8 +194,8 @@ public class TGModelChecker extends NonProbModelChecker
 	 */
 	protected BitSet computeParity(PG pg) throws PrismException
 	{
-		System.out.println(pg.tg.getPlayer(0));
-		//		return new ZielonkaRecursive(this, pg).solve();
+		// return new ZielonkaRecursive(this, pg).solve();
 		return new SmallProgressMeasures(this, pg).solve();
+		// return new PriorityPromotion(this, pg).solve();
 	}
 }

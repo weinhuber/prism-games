@@ -12,19 +12,11 @@ import prism.PrismComponent;
 
 /**
  * Solve parity games using the small progress measures algorithm.
- * We treat null as our T. 
+ * We treat null as our T element. 
  */
 public class SmallProgressMeasures extends PGSolver
 {
 
-	/**
-	 * Maximum priority
-	 */
-	private final int d;
-	/**
-	 * Even upper bound for the maximum priority d
-	 */
-	private int p;
 	/**
 	 * Number of states for a priority
 	 */
@@ -52,8 +44,14 @@ public class SmallProgressMeasures extends PGSolver
 	public SmallProgressMeasures(PrismComponent parent, PG pg)
 	{
 		super(parent, pg);
-		this.d = Collections.max(pg.priorities);
-		this.p = d + (d % 2);
+		// Maximum priority
+		int d = Collections.max(pg.priorities);
+		// Even upper bound for the maximum priority d
+		int p = d + (d % 2);
+		// Change min to max definition
+		for (int s = 0; s < pg.priorities.size(); s++) {
+			pg.priorities.set(s, p - pg.priorities.get(s));
+		}
 		this.rho = new int[tg.getNumStates()][d + 1];
 		this.max = new int[d + 1];
 		for (Map.Entry<Integer, BitSet> entry : pg.priorityMap.entrySet()) {
@@ -109,9 +107,8 @@ public class SmallProgressMeasures extends PGSolver
 		} else {
 			prog = Collections.max(progs, vectorComparator);
 		}
-		prog = Collections.max(Arrays.asList(rho[v], prog), vectorComparator);
 
-		return prog;
+		return Collections.max(Arrays.asList(rho[v], prog), vectorComparator);
 	}
 
 	private int[] prog(int v, int w)
@@ -122,11 +119,11 @@ public class SmallProgressMeasures extends PGSolver
 		int[] rhoV = rho[w].clone();
 		int vPriority = pg.priorities.get(v);
 
-		for (int i = (p - vPriority) + 1; i < rhoV.length; i++) {
+		for (int i = vPriority + 1; i < rhoV.length; i++) {
 			rhoV[i] = 0;
 		}
-		if ((p - vPriority) % 2 != 0) {
-			rhoV = increment(rhoV, p - vPriority);
+		if (vPriority % 2 != 0) {
+			rhoV = increment(rhoV, vPriority);
 		}
 
 		return rhoV;
@@ -139,7 +136,7 @@ public class SmallProgressMeasures extends PGSolver
 		}
 
 		if (prog[i] + 1 > max[i]) {
-			return increment(prog, i - 2);
+			return increment(prog, i - 1);
 		} else {
 			prog[i] = prog[i] + 1;
 		}
@@ -156,12 +153,14 @@ public class SmallProgressMeasures extends PGSolver
 		if (w == null) {
 			return true;
 		}
+
 		for (int i = 0; i < v.length; i++) {
 			if (v[i] == w[i]) {
 				continue;
 			}
 			return v[i] < w[i];
 		}
+
 		return false;
 	}
 
