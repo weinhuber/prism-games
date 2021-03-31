@@ -137,6 +137,7 @@ public class TGSimple extends LTSSimple implements TG
 	{
 		super.addState();
 		stateOwners.addState(p);
+		activeStates.set(numStates - 1);
 		return numStates - 1;
 	}
 

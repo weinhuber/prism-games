@@ -38,6 +38,19 @@ public class PG
 	}
 
 	/**
+	 * Copy constructor. Only copies priorities.
+	 */
+	public PG(PG pg)
+	{
+		tg = pg.tg;
+		priorities = new ArrayList<>(pg.priorities);
+		priorityMap = new HashMap<>();
+		for (int p : pg.priorityMap.keySet()) {
+			priorityMap.put(p, (BitSet) pg.priorityMap.get(p).clone());
+		}
+	}
+
+	/**
 	 * Empty constructor.
 	 */
 	public PG()
@@ -76,40 +89,35 @@ public class PG
 
 	public PG subgame(BitSet states)
 	{
-		PG pg = new PG();
+		PG pg = new PG(this);
 		pg.tg = (TGSimple) tg.subgame(states);
-		pg.priorities = new ArrayList<>(priorities);
-		pg.priorityMap = new HashMap<>(priorityMap);
 
-		BitSet removing = (BitSet) pg.tg.getActiveStates().clone();
-		removing.andNot(states);
-		removing.stream().forEach(s -> {
-			pg.priorities.set(s, -1);
-			pg.priorityMap.computeIfPresent(pg.priorities.get(s), (k, v) -> {
-				v.clear(s);
-				return v.isEmpty() ? null : v;
-			});
-		});
+		BitSet remove = (BitSet) pg.tg.getActiveStates().clone();
+		remove.andNot(states);
+		removePriorities(pg, remove);
 
 		return pg;
 	}
 
 	public PG difference(BitSet states)
 	{
-		PG pg = new PG();
+		PG pg = new PG(this);
 		pg.tg = (TGSimple) tg.difference(states);
-		pg.priorities = new ArrayList<>(priorities);
-		pg.priorityMap = new HashMap<>(priorityMap);
 
+		removePriorities(pg, states);
+
+		return pg;
+	}
+
+	private static void removePriorities(PG pg, BitSet states)
+	{
 		states.stream().forEach(s -> {
-			pg.priorities.set(s, -1);
 			pg.priorityMap.computeIfPresent(pg.priorities.get(s), (k, v) -> {
 				v.clear(s);
 				return v.isEmpty() ? null : v;
 			});
+			pg.priorities.set(s, -1);
 		});
-
-		return pg;
 	}
 
 }

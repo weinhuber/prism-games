@@ -1,25 +1,42 @@
 package explicit;
 
-import java.io.FileNotFoundException;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+
+import prism.PrismComponent;
 
 public class PGReader
 {
 
-	public PG read(InputStream is) throws FileNotFoundException
+	private static final boolean debug = true;
+
+	public static void main(String[] args) throws IOException
 	{
-		PG pg = new PG();
-		pg.tg = new TGSimple();
-		pg.priorities = new ArrayList<>();
+		File file = new File("H:\\pgsolver\\src\\main\\resources\\random4.gm");
+		PGReader pgReader = new PGReader();
+		PG pg = pgReader.read(new FileInputStream(file));
 
-		try (Scanner scanner = new Scanner(is)) {
-			scanner.useDelimiter(";");
+		PriorityPromotion pgSolver = new PriorityPromotion(new PrismComponent(), pg);
+		System.out.println("Winning " + pgSolver.solve());
+	}
 
-			while (scanner.hasNextLine()) {
-				String line = scanner.nextLine();
+	public PG read(InputStream is) throws IOException
+	{
+		TGSimple tg = new TGSimple();
+		List<Integer> priorities = new ArrayList<>();
+
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				if (debug) {
+					System.out.println(line);
+				}
 
 				if (line.startsWith("parity")) {
 					continue;
@@ -44,13 +61,14 @@ public class PGReader
 					continue;
 				}
 
-				int s = pg.tg.addState(owner == 0 ? 1 : 2);
-				pg.tg.trans.set(s, successors);
-				pg.priorities.set(s, priority);
+				int s = tg.addState();
+				tg.setPlayer(s, owner == 0 ? 1 : 2);
+				tg.trans.set(s, successors);
+				priorities.add(priority);
 			}
 		}
 
-		return pg;
+		return new PG(tg, priorities);
 	}
 
 }
