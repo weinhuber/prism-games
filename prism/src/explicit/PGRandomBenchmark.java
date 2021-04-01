@@ -39,9 +39,9 @@ public class PGRandomBenchmark
 					return;
 				}
 
-				//				zielonkaRecursiveTime = time(new ZielonkaRecursive(prismComponent, pg));
-				smallProgressMeasuresTime = time(new SmallProgressMeasures(prismComponent, pg));
-				//				priorityPromotionTime = time(new PriorityPromotion(prismComponent, pg));
+				// zielonkaRecursiveTime = time(new ZielonkaRecursive(prismComponent), pg);
+				smallProgressMeasuresTime = time(new SmallProgressMeasures(prismComponent), pg);
+				// priorityPromotionTime = time(new PriorityPromotion(prismComponent), pg);
 
 				System.out.printf("States {0}, Priorities {1}", states, priorities);
 				System.out.printf("{0} {1} {2}", zielonkaRecursiveTime, smallProgressMeasuresTime, priorityPromotionTime);
@@ -49,11 +49,11 @@ public class PGRandomBenchmark
 		}
 	}
 
-	private static long time(PGSolver pgSolver)
+	private static long time(PGSolver pgSolver, PG pg)
 	{
 		long before = System.currentTimeMillis();
 
-		pgSolver.solve();
+		pgSolver.solve(pg);
 
 		long after = System.currentTimeMillis();
 

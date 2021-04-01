@@ -197,7 +197,7 @@ public class TGModelChecker extends NonProbModelChecker
 		priorities.add(6);
 		System.out.println("Parity " + computeParity(new PG(tg, priorities)));
 
-		return new RGSolver(this, tg, target).solve();
+		return new RGSolver(this).solve(tg, target);
 	}
 
 	/**
@@ -222,9 +222,9 @@ public class TGModelChecker extends NonProbModelChecker
 	 */
 	protected BitSet computeParity(PG pg) throws PrismException
 	{
-		return new ZielonkaRecursive(this, pg).solve();
-		// return new SmallProgressMeasures(this, pg).solve();
-		// return new PriorityPromotion(this, pg).solve();
+		return new ZielonkaRecursive(this).solve(pg);
+		// return new SmallProgressMeasures(this).solve(pg);
+		// return new PriorityPromotion(this).solve(pg);
 	}
 
 }

@@ -1,5 +1,7 @@
 package explicit;
 
+import java.util.BitSet;
+
 import prism.PrismComponent;
 
 /**
@@ -9,17 +11,17 @@ public abstract class PGSolver extends TGSolver
 {
 
 	/**
-	 * Parity game (PG)
-	 */
-	protected PG pg;
-
-	/**
 	 * Create a new parity game solver.
 	 */
-	public PGSolver(PrismComponent parent, PG pg)
+	public PGSolver(PrismComponent parent)
 	{
-		super(parent, pg.tg);
-		this.pg = pg;
+		super(parent);
 	}
+
+	/**
+	 * Compute the solution as player 1 (1-indexed).
+	 * @param pg Parity game (PG)
+	 */
+	public abstract BitSet solve(PG pg);
 
 }

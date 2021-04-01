@@ -17,21 +17,21 @@ public class PriorityPromotion extends PGSolver
 	/**
 	 * Create a new parity game solver.
 	 */
-	public PriorityPromotion(PrismComponent parent, PG pg)
+	public PriorityPromotion(PrismComponent parent)
 	{
-		super(parent, pg);
+		super(parent);
 	}
 
 	@Override
-	public BitSet solve()
+	public BitSet solve(PG pg)
 	{
-		PG paritygame = pg;
+		PG parityGame = pg;
 		WinningRegions W = new WinningRegions();
 
-		while (!paritygame.tg.getActiveStates().isEmpty()) {
-			Pair<Integer, BitSet> dominion = searchDominion(paritygame);
+		while (!parityGame.getTG().getActiveStates().isEmpty()) {
+			Pair<Integer, BitSet> dominion = searchDominion(parityGame);
 			W.get(dominion.getKey()).or(dominion.getValue());
-			paritygame = paritygame.difference(dominion.getValue());
+			parityGame = parityGame.difference(dominion.getValue());
 		}
 
 		return W.w1;
@@ -40,10 +40,10 @@ public class PriorityPromotion extends PGSolver
 	private Pair<Integer, BitSet> searchDominion(PG pg)
 	{
 		Map<Integer, Integer> r = new HashMap<>();
-		pg.tg.getActiveStates().stream().forEach(s -> {
+		pg.getTG().getActiveStates().stream().forEach(s -> {
 			r.put(s, -1); // -1 is our bottom
 		});
-		int p = Collections.max(pg.priorities);
+		int p = Collections.max(pg.getPriorities());
 
 		while (true) {
 			int alpha = p % 2 == 0 ? 1 : 2;
@@ -51,29 +51,29 @@ public class PriorityPromotion extends PGSolver
 
 			int finalP = p;
 
-			BitSet Subgame = (BitSet) pg.tg.getActiveStates().clone();
+			BitSet Subgame = (BitSet) pg.getTG().getActiveStates().clone();
 			r.entrySet().stream()
 			.filter(entry -> entry.getValue() > finalP)
 			.map(Map.Entry::getKey)
 			.forEach(s -> Subgame.set(s, false));
 
-			BitSet A = pg.priorityMap.getOrDefault(p, new BitSet());
+			BitSet A = (BitSet) pg.getPriorityMap().getOrDefault(p, new BitSet()).clone();
 			A.and(Subgame);
 			r.entrySet().stream()
 			.filter(entry -> entry.getValue() == finalP)
 			.map(Map.Entry::getKey)
-			.forEach(s -> A.set(s, true));
+			.forEach(s -> A.set(s));
 
-			BitSet Z = pg.tg.subgame(Subgame).attractor(alpha, A, parent);
+			BitSet Z = pg.getTG().subgame(Subgame).attractor(alpha, A, parent);
 			BitSet finalZ = Z;
 
 			BitSet Open = Z.stream()
-					.filter(s -> pg.tg.getPlayer(s) == alpha && !pg.tg.someSuccessorsInSet(s, finalZ))
-					.collect(BitSet::new, BitSet::set,BitSet::or);
+					.filter(s -> pg.getTG().getPlayer(s) == alpha && !pg.getTG().someSuccessorsInSet(s, finalZ))
+					.collect(BitSet::new, BitSet::set, BitSet::or);
 
 			BitSet Esc = Z.stream()
-					.filter(s -> pg.tg.getPlayer(s) == alphaBar)
-					.flatMap(s -> pg.tg.getSuccessors(s).stream())
+					.filter(s -> pg.getTG().getPlayer(s) == alphaBar)
+					.flatMap(s -> pg.getTG().getSuccessors(s).stream())
 					.filter(s -> !finalZ.get(s))
 					.collect(BitSet::new, BitSet::set, BitSet::or);
 
@@ -86,7 +86,7 @@ public class PriorityPromotion extends PGSolver
 
 				p = Subgame.stream()
 						.filter(s -> !finalZ.get(s))
-						.map(s -> pg.priorities.get(s))
+						.map(s -> pg.getPriorities().get(s))
 						.max().getAsInt();
 			} else if (!Esc.isEmpty()) {
 				p = r.entrySet().stream()
@@ -101,7 +101,7 @@ public class PriorityPromotion extends PGSolver
 				.map(Map.Entry::getKey)
 				.forEach(s -> r.put(s, -1));
 			} else {
-				Z = pg.tg.attractor(alpha, Z, parent);
+				Z = pg.getTG().attractor(alpha, Z, parent);
 				return new Pair<>(alpha, Z);
 			}
 		}

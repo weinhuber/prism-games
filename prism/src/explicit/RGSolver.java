@@ -11,21 +11,19 @@ public class RGSolver extends TGSolver
 {
 
 	/**
-	 * Target set
-	 */
-	protected final BitSet target;
-
-	/**
 	 * Create a new reachability game solver.
 	 */
-	public RGSolver(PrismComponent parent, TG tg, BitSet target)
+	public RGSolver(PrismComponent parent)
 	{
-		super(parent, tg);
-		this.target = target;
+		super(parent);
 	}
 
-	@Override
-	public BitSet solve()
+	/**
+	 * Compute the solution as player 1 (1-indexed).
+	 * @param tg Turn-based game (TG)
+	 * @param target Target set
+	 */
+	public BitSet solve(TG tg, BitSet target)
 	{
 		return tg.attractor(1, target, parent);
 	}

@@ -18,17 +18,9 @@ public class SmallProgressMeasures extends PGSolver
 {
 
 	/**
-	 * Number of states for a priority
-	 */
-	private int[] max;
-	/**
-	 * Small progress measure
-	 */
-	private final int[][] rho;
-	/**
 	 * Vector comparator for lexicographic order
 	 */
-	private final Comparator<int[]> vectorComparator = (v, w) -> {
+	private static final Comparator<int[]> vectorComparator = (v, w) -> {
 		if (lessThan(v, w)) {
 			return -1;
 		}
@@ -41,42 +33,43 @@ public class SmallProgressMeasures extends PGSolver
 	/**
 	 * Create a new parity game solver.
 	 */
-	public SmallProgressMeasures(PrismComponent parent, PG pg)
+	public SmallProgressMeasures(PrismComponent parent)
 	{
-		super(parent, pg);
-		// Maximum priority
-		int d = Collections.max(pg.priorities);
-		// Even upper bound for the maximum priority d
-		int p = d + (d % 2);
-		// Change min to max definition
-		for (int s = 0; s < pg.priorities.size(); s++) {
-			pg.priorities.set(s, p - pg.priorities.get(s));
-		}
-		this.rho = new int[tg.getNumStates()][d + 1];
-		this.max = new int[d + 1];
-		for (Map.Entry<Integer, BitSet> entry : pg.priorityMap.entrySet()) {
-			max[entry.getKey()] = entry.getValue().cardinality();
-		}
+		super(parent);
 	}
 
 	@Override
-	public BitSet solve()
+	public BitSet solve(PG pg)
 	{
+		// Convert PG to the min definition
+		PG parityGame = new PG(pg);
+		parityGame.convertPrioritiesToMin();
+
 		WinningRegions W = new WinningRegions();
-		W.w2 = jurdzinksi();
+		W.w2 = jurdzinksi(parityGame);
 		W.w1 = (BitSet) W.w2.clone();
-		W.w1.flip(0, tg.getNumStates());
+		W.w1.flip(0, parityGame.getTG().getNumStates());
 		return W.w1;
 	}
 
-	private BitSet jurdzinksi()
+	private BitSet jurdzinksi(PG pg)
 	{
-		// LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, tg);
-		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, tg, rho);
+		// Maximum priority
+		int d = Collections.max(pg.getPriorities());
+		// Number of states for a priority
+		int[] max = new int[d + 1];
+		for (Map.Entry<Integer, BitSet> entry : pg.getPriorityMap().entrySet()) {
+			max[entry.getKey()] = entry.getValue().cardinality();
+		}
+		// Progress measure
+		int[][] rho = new int[pg.getTG().getNumStates()][d + 1];
+
+		// LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, pg.getTG());
+		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, pg.getTG(), rho);
 		int v = liftingStrategy.next();
 
 		while (v != LiftingStrategy.NO_STATE) {
-			int[] lift = lift(v);
+			int[] lift = lift(pg, rho, max, v);
 			if (vectorComparator.compare(rho[v], lift) < 0) {
 				liftingStrategy.lifted(v);
 				rho[v] = lift;
@@ -94,15 +87,15 @@ public class SmallProgressMeasures extends PGSolver
 		return w2;
 	}
 
-	private int[] lift(int v)
+	private static int[] lift(PG pg, int[][] rho, int[] max, int v)
 	{
 		List<int[]> progs = new ArrayList<>();
 		int[] prog;
 
-		tg.getSuccessors(v).stream().forEach(w -> {
-			progs.add(prog(v, w));
+		pg.getTG().getSuccessors(v).stream().forEach(w -> {
+			progs.add(prog(pg, rho, max, v, w));
 		});
-		if (tg.getPlayer(v) == 1) {
+		if (pg.getTG().getPlayer(v) == 1) {
 			prog = Collections.min(progs, vectorComparator);
 		} else {
 			prog = Collections.max(progs, vectorComparator);
@@ -111,32 +104,32 @@ public class SmallProgressMeasures extends PGSolver
 		return Collections.max(Arrays.asList(rho[v], prog), vectorComparator);
 	}
 
-	private int[] prog(int v, int w)
+	private static int[] prog(PG pg, int[][] rho, int[] max, int v, int w)
 	{
 		if (rho[w] == null) {
 			return null;
 		}
 		int[] rhoV = rho[w].clone();
-		int vPriority = pg.priorities.get(v);
+		int vPriority = pg.getPriorities().get(v);
 
 		for (int i = vPriority + 1; i < rhoV.length; i++) {
 			rhoV[i] = 0;
 		}
 		if (vPriority % 2 != 0) {
-			rhoV = increment(rhoV, vPriority);
+			rhoV = increment(rhoV, max, vPriority);
 		}
 
 		return rhoV;
 	}
 
-	private int[] increment(int[] prog, int i)
+	private static int[] increment(int[] prog, int[] max, int i)
 	{
 		if (i == 1 && prog[1] == max[1]) {
 			return null;
 		}
 
 		if (prog[i] + 1 > max[i]) {
-			return increment(prog, i - 1);
+			return increment(prog, max, i - 1);
 		} else {
 			prog[i] = prog[i] + 1;
 		}

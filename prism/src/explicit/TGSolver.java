@@ -1,7 +1,5 @@
 package explicit;
 
-import java.util.BitSet;
-
 import prism.PrismComponent;
 
 /**
@@ -14,23 +12,13 @@ public abstract class TGSolver
 	 * PrismComponent for obtaining the log
 	 */
 	protected final PrismComponent parent;
-	/**
-	 * Turn-based game (TG)
-	 */
-	protected final TGSimple tg;
 
 	/**
 	 * Create a new TGSolver for a turn-based game (TG).
 	 */
-	public TGSolver(PrismComponent parent, TG tg)
+	public TGSolver(PrismComponent parent)
 	{
 		this.parent = parent;
-		this.tg = (TGSimple) tg;
 	}
-
-	/**
-	 * Compute the solution as player 1 (1-indexed).
-	 */
-	public abstract BitSet solve();
 
 }

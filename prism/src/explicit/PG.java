@@ -2,6 +2,7 @@ package explicit;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,59 @@ public class PG
 	{
 	}
 
+	public PG subgame(BitSet states)
+	{
+		PG pg = new PG(this);
+		pg.tg = (TGSimple) tg.subgame(states);
+
+		// The states not present in the subgame
+		BitSet difference = (BitSet) pg.tg.getActiveStates().clone();
+		difference.andNot(states);
+		deletePriorities(pg, difference);
+
+		return pg;
+	}
+
+	public PG difference(BitSet states)
+	{
+		PG pg = new PG(this);
+		pg.tg = (TGSimple) tg.difference(states);
+
+		deletePriorities(pg, states);
+
+		return pg;
+	}
+
+	private static void deletePriorities(PG pg, BitSet states)
+	{
+		states.stream().forEach(s -> {
+			pg.priorityMap.computeIfPresent(pg.priorities.get(s), (k, v) -> {
+				v.clear(s);
+				return v.isEmpty() ? null : v;
+			});
+
+			pg.priorities.set(s, -1);
+		});
+	}
+
+	public void convertPrioritiesToMin()
+	{
+		// Maximum priority
+		int d = Collections.max(priorities);
+		// Even upper bound for the maximum priority d
+		int p = d + (d % 2);
+
+		for (int i = 0; i < priorities.size(); i++) {
+			priorities.set(i, p - priorities.get(i));
+		}
+
+		Map<Integer, BitSet> oldPriorityMap = priorityMap;
+		priorityMap = new HashMap<>();
+		for (int oldPriority : oldPriorityMap.keySet()) {
+			priorityMap.put(p - oldPriority, oldPriorityMap.get(oldPriority));
+		}
+	}
+
 	public TG getTG()
 	{
 		return tg;
@@ -85,39 +139,6 @@ public class PG
 	public void setPriorityMap(Map<Integer, BitSet> priorityMap)
 	{
 		this.priorityMap = priorityMap;
-	}
-
-	public PG subgame(BitSet states)
-	{
-		PG pg = new PG(this);
-		pg.tg = (TGSimple) tg.subgame(states);
-
-		BitSet remove = (BitSet) pg.tg.getActiveStates().clone();
-		remove.andNot(states);
-		removePriorities(pg, remove);
-
-		return pg;
-	}
-
-	public PG difference(BitSet states)
-	{
-		PG pg = new PG(this);
-		pg.tg = (TGSimple) tg.difference(states);
-
-		removePriorities(pg, states);
-
-		return pg;
-	}
-
-	private static void removePriorities(PG pg, BitSet states)
-	{
-		states.stream().forEach(s -> {
-			pg.priorityMap.computeIfPresent(pg.priorities.get(s), (k, v) -> {
-				v.clear(s);
-				return v.isEmpty() ? null : v;
-			});
-			pg.priorities.set(s, -1);
-		});
 	}
 
 }
