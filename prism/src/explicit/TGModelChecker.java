@@ -26,7 +26,6 @@
 
 package explicit;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
@@ -46,6 +45,10 @@ import prism.PrismNotSupportedException;
  */
 public class TGModelChecker extends NonProbModelChecker
 {
+
+	private final PGSolver zielonkaRecursive = new ZielonkaRecursive(this);
+	private final PGSolver priorityPromotion = new PriorityPromotion(this);
+	private final PGSolver smallProgressMeasures = new SmallProgressMeasures(this);
 
 	/**
 	 * Create a new TGModelChecker, inherit basic state from parent (unless null).
@@ -173,30 +176,6 @@ public class TGModelChecker extends NonProbModelChecker
 	 */
 	protected BitSet computeReach(TG tg, BitSet target) throws PrismException
 	{
-		List<Integer> priorities = new ArrayList<>();
-		// Priorities for fig3_1
-		//				priorities.add(4);
-		//				priorities.add(3);
-		//				priorities.add(2);
-		//				priorities.add(1);
-		//				priorities.add(0);
-		//				priorities.add(1);
-		//				priorities.add(2);
-		//				priorities.add(3);
-		//				priorities.add(0);
-		// Priorities for random1
-		priorities.add(9);
-		priorities.add(7);
-		priorities.add(1);
-		priorities.add(10);
-		priorities.add(2);
-		priorities.add(11);
-		priorities.add(9);
-		priorities.add(9);
-		priorities.add(12);
-		priorities.add(6);
-		System.out.println("Parity " + computeParity(new PG(tg, priorities)));
-
 		return new RGSolver(this).solve(tg, target);
 	}
 
@@ -222,9 +201,9 @@ public class TGModelChecker extends NonProbModelChecker
 	 */
 	protected BitSet computeParity(PG pg) throws PrismException
 	{
-		return new ZielonkaRecursive(this).solve(pg);
-		// return new SmallProgressMeasures(this).solve(pg);
-		// return new PriorityPromotion(this).solve(pg);
+		return zielonkaRecursive.solve(pg);
+		// return priorityPromotion.solve(pg);
+		// return smallProgressMeasures.solve(pg);
 	}
 
 }

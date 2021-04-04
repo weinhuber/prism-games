@@ -1,49 +1,16 @@
 package explicit;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
-
-import prism.PrismComponent;
 
 public class PGReader
 {
 
 	private static final boolean DEBUG = false;
-
-	public static void main(String[] args) throws IOException
-	{
-		PGReader pgReader = new PGReader();
-
-		boolean correct = true;
-
-		for (int i = 1; i <= 20; i++) {
-			File file = new File("H:\\pgsolver\\src\\main\\resources\\random" + i + ".gm");
-			PG pg = pgReader.read(new FileInputStream(file));
-
-			System.out.println("random" + i + ".gm");
-
-			BitSet win1 = new ZielonkaRecursive(new PrismComponent()).solve(pg);
-			System.out.println(win1);
-			BitSet win2 = new SmallProgressMeasures(new PrismComponent()).solve(pg);
-			System.out.println(win2);
-			BitSet win3 = new PriorityPromotion(new PrismComponent()).solve(pg);
-			System.out.println(win3);
-
-			boolean instanceCorrect = win1.equals(win2) && win2.equals(win3);
-			System.out.println(instanceCorrect);
-
-			correct = correct && instanceCorrect;
-		}
-
-		System.out.println(correct);
-	}
 
 	public PG read(InputStream is) throws IOException
 	{

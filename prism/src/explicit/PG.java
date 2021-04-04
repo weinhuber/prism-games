@@ -93,7 +93,7 @@ public class PG
 		});
 	}
 
-	public void convertPrioritiesToMin()
+	public void convertMaxToMin()
 	{
 		// Maximum priority
 		int d = Collections.max(priorities);

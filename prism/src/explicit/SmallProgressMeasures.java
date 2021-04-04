@@ -18,17 +18,9 @@ public class SmallProgressMeasures extends PGSolver
 {
 
 	/**
-	 * Vector comparator for lexicographic order
+	 * Measure comparator for lexicographic order
 	 */
-	private static final Comparator<int[]> vectorComparator = (v, w) -> {
-		if (lessThan(v, w)) {
-			return -1;
-		}
-		if (lessThan(w, v)) {
-			return 1;
-		}
-		return 0;
-	};
+	private static final Comparator<int[]> measureComparator = SmallProgressMeasures::compare;
 
 	/**
 	 * Create a new parity game solver.
@@ -41,14 +33,14 @@ public class SmallProgressMeasures extends PGSolver
 	@Override
 	public BitSet solve(PG pg)
 	{
-		// Convert PG to the min definition
+		// Convert PG to the min definition as SPM assumes this
 		PG parityGame = new PG(pg);
-		parityGame.convertPrioritiesToMin();
+		parityGame.convertMaxToMin();
 
 		WinningRegions W = new WinningRegions();
 		W.w2 = jurdzinksi(parityGame);
 		W.w1 = (BitSet) W.w2.clone();
-		W.w1.flip(0, parityGame.getTG().getNumStates());
+		W.w1.flip(0, pg.getTG().getNumStates());
 		return W.w1;
 	}
 
@@ -59,7 +51,9 @@ public class SmallProgressMeasures extends PGSolver
 		// Number of states for a priority
 		int[] max = new int[d + 1];
 		for (Map.Entry<Integer, BitSet> entry : pg.getPriorityMap().entrySet()) {
-			max[entry.getKey()] = entry.getValue().cardinality();
+			if (entry.getKey() % 2 != 0) {
+				max[entry.getKey()] = entry.getValue().cardinality();
+			}
 		}
 		// Progress measure
 		int[][] rho = new int[pg.getTG().getNumStates()][d + 1];
@@ -69,10 +63,10 @@ public class SmallProgressMeasures extends PGSolver
 		int v = liftingStrategy.next();
 
 		while (v != LiftingStrategy.NO_STATE) {
-			int[] lift = lift(pg, rho, max, v);
-			if (vectorComparator.compare(rho[v], lift) < 0) {
-				liftingStrategy.lifted(v);
+			int[] lift = lift(pg, rho, max, d, v);
+			if (measureComparator.compare(rho[v], lift) < 0) {
 				rho[v] = lift;
+				liftingStrategy.lifted(v);
 			}
 			v = liftingStrategy.next();
 		}
@@ -87,74 +81,79 @@ public class SmallProgressMeasures extends PGSolver
 		return w2;
 	}
 
-	private static int[] lift(PG pg, int[][] rho, int[] max, int v)
+	private static int[] lift(PG pg, int[][] rho, int[] max, int d, int v)
 	{
 		List<int[]> progs = new ArrayList<>();
 		int[] prog;
 
 		pg.getTG().getSuccessors(v).stream().forEach(w -> {
-			progs.add(prog(pg, rho, max, v, w));
+			progs.add(prog(pg, rho, max, d, v, w));
 		});
 		if (pg.getTG().getPlayer(v) == 1) {
-			prog = Collections.min(progs, vectorComparator);
+			prog = Collections.min(progs, measureComparator);
 		} else {
-			prog = Collections.max(progs, vectorComparator);
+			prog = Collections.max(progs, measureComparator);
 		}
 
-		return Collections.max(Arrays.asList(rho[v], prog), vectorComparator);
+		return Collections.max(Arrays.asList(rho[v], prog), measureComparator);
 	}
 
-	private static int[] prog(PG pg, int[][] rho, int[] max, int v, int w)
+	private static int[] prog(PG pg, int[][] rho, int[] max, int d, int v, int w)
 	{
 		if (rho[w] == null) {
 			return null;
 		}
-		int[] rhoV = rho[w].clone();
-		int vPriority = pg.getPriorities().get(v);
 
-		for (int i = vPriority + 1; i < rhoV.length; i++) {
-			rhoV[i] = 0;
+		int vPriority = pg.getPriorities().get(v);
+		int[] measure = new int[d + 1];
+
+		for (int i = 1; i <= vPriority; i += 2) {
+			measure[i] = rho[w][i];
 		}
 		if (vPriority % 2 != 0) {
-			rhoV = increment(rhoV, max, vPriority);
+			measure = increase(measure, max, vPriority);
 		}
 
-		return rhoV;
+		return measure;
 	}
 
-	private static int[] increment(int[] prog, int[] max, int i)
+	private static int[] increase(int[] measure, int[] max, int p)
 	{
-		if (i == 1 && prog[1] == max[1]) {
-			return null;
+		if (measure != null) {
+			for (int i = p; i >= 0; i--) {
+				if (measure[i] < max[i]) {
+					measure[i] = measure[i] + 1;
+					return measure;
+				} else {
+					measure[i] = 0;
+				}
+			}
 		}
 
-		if (prog[i] + 1 > max[i]) {
-			return increment(prog, max, i - 1);
-		} else {
-			prog[i] = prog[i] + 1;
-		}
-
-		return prog;
+		return null;
 	}
 
-	// lexicographic order
-	private static boolean lessThan(int[] v, int[] w)
+	// Lexicographic order
+	private static int compare(int[] v, int[] w)
 	{
 		if (v == null) {
-			return false;
-		}
-		if (w == null) {
-			return true;
+			if (w == null) {
+				return 0;
+			} else {
+				return 1;
+			}
+		} else if (w == null) {
+			return -1;
 		}
 
 		for (int i = 0; i < v.length; i++) {
 			if (v[i] == w[i]) {
 				continue;
 			}
-			return v[i] < w[i];
+			return Integer.compare(v[i], w[i]);
 		}
 
-		return false;
+		return 0;
 	}
 
 }

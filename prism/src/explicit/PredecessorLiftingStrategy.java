@@ -21,7 +21,7 @@ public class PredecessorLiftingStrategy extends LiftingStrategy
 	/**
 	 * Queue of states to attempt to lift
 	 */
-	protected Queue<Integer> queue = new LinkedList<>();
+	protected Deque<Integer> queue = new LinkedList<>();
 
 	/**
 	 * Create a PredecessorLiftingStrategy.
@@ -45,7 +45,7 @@ public class PredecessorLiftingStrategy extends LiftingStrategy
 		for (int w : tg.getPredecessorRelation(parent, true).getPre(s)) {
 			if (!queued.get(w) && rho[w] != null) {
 				queued.set(w);
-				queue.add(w);
+				queue.push(w);
 			}
 		}
 	}
@@ -56,7 +56,7 @@ public class PredecessorLiftingStrategy extends LiftingStrategy
 		if (queue.isEmpty()) {
 			return LiftingStrategy.NO_STATE;
 		} else {
-			int v = queue.poll();
+			int v = queue.remove();
 			queued.set(v, false);
 			return v;
 		}
