@@ -46,8 +46,14 @@ import prism.PrismNotSupportedException;
 public class TGModelChecker extends NonProbModelChecker
 {
 
+	/** Reachability Game Algorithm */
+	private final RGSolver reachability = new RGSolver(this);
+
+	/** Parity Game Algorithm: Zielonka's Recursive */
 	private final PGSolver zielonkaRecursive = new ZielonkaRecursive(this);
+	/** Parity Game Algorithm: Priority Promotion */
 	private final PGSolver priorityPromotion = new PriorityPromotion(this);
+	/** Parity Game Algorithm: Small Progress Measures  */
 	private final PGSolver smallProgressMeasures = new SmallProgressMeasures(this);
 
 	/**
@@ -144,12 +150,13 @@ public class TGModelChecker extends NonProbModelChecker
 		AcceptanceParity.replaceMissingPriorities(priorities, accPar.getObjective());
 		AcceptanceParity.convertPrioritiesToEven(priorities, accPar.getParity());
 		AcceptanceParity.convertPrioritiesToMax(priorities, accPar.getObjective());
-		//mainLog.println(priorities);
+		// mainLog.println(priorities);
 
 		// Solve parity objective on product
 		TGModelChecker mcProduct = new TGModelChecker(this);
 		mcProduct.inheritSettings(this);
-		BitSet result = mcProduct.computeParity((TG) product.getProductModel(), priorities, coalition);
+		PG pg = new PG((TG) product.getProductModel(), priorities);
+		BitSet result = mcProduct.computeParity(pg, coalition);
 
 		return StateValues.createFromBitSet(result, model);
 	}
@@ -176,27 +183,27 @@ public class TGModelChecker extends NonProbModelChecker
 	 */
 	protected BitSet computeReach(TG tg, BitSet target) throws PrismException
 	{
-		return new RGSolver(this).solve(tg, target);
+		return reachability.solve(tg, target);
 	}
 
 	/**
 	 * Compute parity
-	 * @param tg TG
+	 * @param pg PG
 	 * @param priorities State priorities
 	 * @param coalition Players trying to reach the target
 	 */
-	protected BitSet computeParity(TG tg, List<Integer> priorities, Coalition coalition) throws PrismException
+	protected BitSet computeParity(PG pg, Coalition coalition) throws PrismException
 	{
 		// Temporarily make the model a 2-player TG (if not already) by setting coalition
-		tg.setCoalition(coalition);
-		BitSet res = computeParity(new PG(tg, priorities));
-		tg.setCoalition(null);
+		pg.getTG().setCoalition(coalition);
+		BitSet res = computeParity(pg);
+		pg.getTG().setCoalition(null);
 		return res;
 	}
 
 	/**
 	 * Compute 2-player parity
-	 * @param tg 2-player TG
+	 * @param pg 2-player PG
 	 * @param priorities List of priorities
 	 */
 	protected BitSet computeParity(PG pg) throws PrismException
