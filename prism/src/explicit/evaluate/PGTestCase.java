@@ -12,7 +12,8 @@ import explicit.SmallProgressMeasuresSolver;
 import explicit.ZielonkaRecursiveSolver;
 import prism.PrismComponent;
 
-public class PGTestCase {
+public class PGTestCase
+{
 
 	private final PGReader pgReader = new PGReader();
 
@@ -21,12 +22,14 @@ public class PGTestCase {
 	private final PGSolver pp = new PriorityPromotionSolver(prismComponent);
 	private final PGSolver spm = new SmallProgressMeasuresSolver(prismComponent);
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGTestCase pgTestCase = new PGTestCase();
 		pgTestCase.test();
 	}
 
-	public void test() {
+	public void test()
+	{
 		boolean correct = true;
 
 		for (int i = 1; i <= 5; i++) {

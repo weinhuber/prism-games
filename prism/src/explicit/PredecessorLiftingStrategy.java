@@ -7,7 +7,8 @@ import prism.PrismComponent;
 /**
  * Predecessor lifting strategy for the small progress measures algorithm.
  */
-public class PredecessorLiftingStrategy extends LiftingStrategy {
+public class PredecessorLiftingStrategy extends LiftingStrategy
+{
 
 	/**
 	 * Small progress measure
@@ -25,7 +26,8 @@ public class PredecessorLiftingStrategy extends LiftingStrategy {
 	/**
 	 * Create a PredecessorLiftingStrategy.
 	 */
-	public PredecessorLiftingStrategy(PrismComponent parent, PG pg, int[][] rho) {
+	public PredecessorLiftingStrategy(PrismComponent parent, PG pg, int[][] rho)
+	{
 		super(parent, pg);
 		this.rho = rho;
 		this.queued = new BitSet(pg.getTG().getNumStates());
@@ -38,9 +40,10 @@ public class PredecessorLiftingStrategy extends LiftingStrategy {
 	}
 
 	@Override
-	public void lifted(int s) {
+	public void lifted(int s)
+	{
 		PredecessorRelation pre = pg.getTG().getPredecessorRelation(parent, true);
-		
+
 		for (int w : pre.getPre(s)) {
 			if (!queued.get(w) && rho[w] != null) {
 				queued.set(w);
@@ -50,7 +53,8 @@ public class PredecessorLiftingStrategy extends LiftingStrategy {
 	}
 
 	@Override
-	public int next() {
+	public int next()
+	{
 		if (queue.isEmpty()) {
 			return LiftingStrategy.NO_STATE;
 		} else {
@@ -59,5 +63,5 @@ public class PredecessorLiftingStrategy extends LiftingStrategy {
 			return v;
 		}
 	}
-	
+
 }

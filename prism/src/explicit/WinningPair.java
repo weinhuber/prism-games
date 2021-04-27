@@ -52,5 +52,5 @@ public class WinningPair
 	{
 		this.strategy = strategy;
 	}
-	
+
 }

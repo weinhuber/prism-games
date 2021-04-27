@@ -59,7 +59,7 @@ public class SmallProgressMeasuresSolver extends PGSolver
 		int[][] rho = new int[pg.getTG().getNumStates()][d + 1];
 
 		// Lifting strategies can be swapped here
-//		LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, pg);
+		// LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, pg);
 		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, pg, rho);
 		int v = liftingStrategy.next();
 
@@ -68,7 +68,7 @@ public class SmallProgressMeasuresSolver extends PGSolver
 			if (Thread.currentThread().isInterrupted()) {
 				return null;
 			}
-			
+
 			int[] lift = lift(pg, rho, max, d, v);
 			if (measureComparator.compare(rho[v], lift) < 0) {
 				rho[v] = lift;

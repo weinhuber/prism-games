@@ -5,24 +5,27 @@ import java.util.BitSet;
 import prism.PrismComponent;
 
 /**
- * Solve reachability games.
+ * Solve reachability games (RGs).
  */
-public class RGSolver extends TGSolver {
+public class RGSolver extends TGSolver
+{
 
 	/**
 	 * Create a new reachability game solver.
 	 */
-	public RGSolver(PrismComponent parent) {
+	public RGSolver(PrismComponent parent)
+	{
 		super(parent);
 	}
 
 	/**
 	 * Compute the solution.
 	 * 
-	 * @param tg     Turn-based game (TG)
+	 * @param tg Turn-based game (TG)
 	 * @param target Target set
 	 */
-	public TGSolution solve(RG rg) {
+	public TGSolution solve(RG rg)
+	{
 		TGSolution soln = new TGSolution();
 
 		WinningPair pair = rg.getTG().attractor(1, rg.target, parent);

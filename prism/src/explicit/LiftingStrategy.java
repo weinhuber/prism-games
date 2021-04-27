@@ -5,7 +5,8 @@ import prism.PrismComponent;
 /**
  * Lifting strategy for the small progress measures algorithm.
  */
-public abstract class LiftingStrategy {
+public abstract class LiftingStrategy
+{
 
 	/**
 	 * Indicator for there being no more states left to lift
@@ -24,7 +25,8 @@ public abstract class LiftingStrategy {
 	/**
 	 * Create a LiftingStrategy.
 	 */
-	public LiftingStrategy(PrismComponent parent, PG pg) {
+	public LiftingStrategy(PrismComponent parent, PG pg)
+	{
 		this.parent = parent;
 		this.pg = pg;
 	}

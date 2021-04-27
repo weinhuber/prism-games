@@ -9,23 +9,27 @@ import prism.PrismComponent;
 /**
  * Solve parity games using the Zielonka recursive algorithm.
  */
-public class ZielonkaRecursiveSolver extends PGSolver {
+public class ZielonkaRecursiveSolver extends PGSolver
+{
 
 	/**
 	 * Create a new parity game solver.
 	 */
-	public ZielonkaRecursiveSolver(PrismComponent parent) {
+	public ZielonkaRecursiveSolver(PrismComponent parent)
+	{
 		super(parent);
 	}
 
 	@Override
-	public TGSolution solve(PG pg) {
+	public TGSolution solve(PG pg)
+	{
 		TGSolution soln = zielonka(pg);
 		parent.getLog().println(soln);
 		return soln;
 	}
 
-	private TGSolution zielonka(PG pg) {
+	private TGSolution zielonka(PG pg)
+	{
 		// (For benchmarking)
 		if (Thread.currentThread().isInterrupted()) {
 			return null;

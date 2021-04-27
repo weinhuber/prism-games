@@ -16,7 +16,7 @@ public class RG
 	 * Target set
 	 */
 	protected BitSet target;
-	
+
 	/**
 	 * Create a new reachability game (RG).
 	 */
@@ -45,5 +45,5 @@ public class RG
 	{
 		this.target = target;
 	}
-	
+
 }

@@ -5,7 +5,8 @@ import prism.PrismComponent;
 /**
  * Linear lifting strategy for the small progress measures algorithm.
  */
-public class LinearLiftingStrategy extends LiftingStrategy {
+public class LinearLiftingStrategy extends LiftingStrategy
+{
 
 	/**
 	 * How many states have failed to lift
@@ -19,17 +20,20 @@ public class LinearLiftingStrategy extends LiftingStrategy {
 	/**
 	 * Create a LinearLiftingStrategy.
 	 */
-	public LinearLiftingStrategy(PrismComponent parent, PG pg) {
+	public LinearLiftingStrategy(PrismComponent parent, PG pg)
+	{
 		super(parent, pg);
 	}
 
 	@Override
-	public void lifted(int s) {
+	public void lifted(int s)
+	{
 		numFailed = 0;
 	}
 
 	@Override
-	public int next() {
+	public int next()
+	{
 		if (numFailed == pg.getTG().getNumStates()) {
 			return LiftingStrategy.NO_STATE;
 		} else {

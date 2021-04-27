@@ -155,7 +155,7 @@ public class TGModelChecker extends NonProbModelChecker
 		TGModelChecker mcProduct = new TGModelChecker(this);
 		mcProduct.inheritSettings(this);
 		BitSet result = mcProduct.computeParity((TG) product.getProductModel(), priorities, coalition);
-		
+
 		return StateValues.createFromBitSet(result, model);
 	}
 
@@ -212,8 +212,8 @@ public class TGModelChecker extends NonProbModelChecker
 		PG pg = new PG(tg, priorities);
 		// Parity game algorithms can be swapped here
 		TGSolution soln = zielonkaRecursiveSolver.solve(pg);
-//		TGSolution soln = priorityPromotionSolver.solve(pg);
-//		TGSolution soln = smallProgressMeasuresSolver.solve(pg);
+		// TGSolution soln = priorityPromotionSolver.solve(pg);
+		// TGSolution soln = smallProgressMeasuresSolver.solve(pg);
 		// Compute solution as Player 1 (1-indexed).
 		return soln.get(1).getRegion();
 	}

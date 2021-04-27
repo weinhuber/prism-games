@@ -57,8 +57,9 @@ public class PG
 	public PG()
 	{
 	}
-	
-	public int maxPriority() {
+
+	public int maxPriority()
+	{
 		return Collections.max(priorities);
 	}
 
@@ -79,7 +80,7 @@ public class PG
 			priorityMap.put(p - oldPriority, oldPriorityMap.get(oldPriority));
 		}
 	}
-	
+
 	public PG subgame(BitSet states)
 	{
 		PG pg = new PG(this);

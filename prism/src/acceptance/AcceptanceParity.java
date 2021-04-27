@@ -17,6 +17,7 @@ import prism.PrismNotSupportedException;
  */
 public class AcceptanceParity implements AcceptanceOmega
 {
+
 	/** The objective i.e. min or max */
 	private Objective objective;
 	/** The parity i.e. even or odd */
@@ -67,21 +68,21 @@ public class AcceptanceParity implements AcceptanceOmega
 	{
 		return numPriorities;
 	}
-	
+
 	/** Get the {@code p}th acceptance set,
 	 * i.e., the states with priority {@code p} */
 	public BitSet getAcceptanceSet(int p)
 	{
 		return accSets.get(p);
 	}
-	
+
 	/** Set the {@code p}th acceptance set,
 	 * i.e., the states with priority {@code p} */
 	public void setAcceptanceSet(int p, BitSet b)
 	{
 		accSets.set(p, b);
 	}
-	
+
 	/** Make a copy of the acceptance condition. */
 	public AcceptanceParity clone()
 	{
@@ -151,7 +152,8 @@ public class AcceptanceParity implements AcceptanceOmega
 	}
 
 	/** Get a list of priorities for states 0<=s<n */
-	public List<Integer> getPriorities(int n) {
+	public List<Integer> getPriorities(int n)
+	{
 		List<Integer> priorities = new ArrayList<>(n);
 		for (int i = 0; i < n; i++) {
 			priorities.add(-1);
@@ -164,7 +166,7 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 		return priorities;
 	}
-	
+
 	public boolean isAccepting(int priority)
 	{
 		return priority % 2 == 0 ? parity == Parity.EVEN : parity == Parity.ODD;
@@ -194,7 +196,7 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 		return list;
 	}
-	
+
 	@Override
 	public String getSignatureForState(int stateIndex)
 	{
@@ -322,8 +324,9 @@ public class AcceptanceParity implements AcceptanceOmega
 	}
 
 	// Utility functions
-	
-	public static void replaceMissingPriorities(List<Integer> priorities, Objective objective) {
+
+	public static void replaceMissingPriorities(List<Integer> priorities, Objective objective)
+	{
 		// Add a dummy priority if some are missing
 		if (priorities.contains(-1)) {
 			if (objective == AcceptanceParity.Objective.MIN) {
@@ -345,7 +348,8 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
-	public static void convertPrioritiesToEven(List<Integer> priorities, Parity parity) {
+	public static void convertPrioritiesToEven(List<Integer> priorities, Parity parity)
+	{
 		if (parity == AcceptanceParity.Parity.ODD) {
 			for (int s = 0; s < priorities.size(); s++) {
 				priorities.set(s, priorities.get(s) + 1);
@@ -354,7 +358,8 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
-	public static void convertPrioritiesToMax(List<Integer> priorities, Objective objective) {
+	public static void convertPrioritiesToMax(List<Integer> priorities, Objective objective)
+	{
 		if (objective == AcceptanceParity.Objective.MIN) {
 			int d = Collections.max(priorities);
 			if (d % 2 == 1) {
@@ -367,7 +372,8 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
-	public static void shiftPiorities(List<Integer> priorities) {
+	public static void shiftPiorities(List<Integer> priorities)
+	{
 		// Shift so min is 0 or 1
 		int minPriority = Collections.min(priorities);
 		int shift = minPriority % 2 == 0 ? -minPriority : 1 - minPriority;

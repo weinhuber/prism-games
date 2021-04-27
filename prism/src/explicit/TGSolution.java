@@ -41,10 +41,11 @@ public class TGSolution
 			w2 = pair;
 		}
 	}
-	
+
 	@Override
-	public String toString() {
-		String s = "Winning Regions:\n";
+	public String toString()
+	{
+		String s = "TGSolution:\n";
 		s += "Player 1:\n";
 		s += "Region: " + w1.getRegion() + "\n";
 		s += "Strategy: " + w1.getStrategy() + "\n";
