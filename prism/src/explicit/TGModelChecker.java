@@ -47,14 +47,13 @@ public class TGModelChecker extends NonProbModelChecker
 {
 
 	/** Reachability Game Algorithm */
-	private final RGSolver reachability = new RGSolver(this);
-
+	private final RGSolver reachabilitySolver = new RGSolver(this);
 	/** Parity Game Algorithm: Zielonka's Recursive */
-	private final PGSolver zielonkaRecursive = new ZielonkaRecursive(this);
+	private final PGSolver zielonkaRecursiveSolver = new ZielonkaRecursiveSolver(this);
 	/** Parity Game Algorithm: Priority Promotion */
-	private final PGSolver priorityPromotion = new PriorityPromotion(this);
+	private final PGSolver priorityPromotionSolver = new PriorityPromotionSolver(this);
 	/** Parity Game Algorithm: Small Progress Measures  */
-	private final PGSolver smallProgressMeasures = new SmallProgressMeasures(this);
+	private final PGSolver smallProgressMeasuresSolver = new SmallProgressMeasuresSolver(this);
 
 	/**
 	 * Create a new TGModelChecker, inherit basic state from parent (unless null).
@@ -150,14 +149,13 @@ public class TGModelChecker extends NonProbModelChecker
 		AcceptanceParity.replaceMissingPriorities(priorities, accPar.getObjective());
 		AcceptanceParity.convertPrioritiesToEven(priorities, accPar.getParity());
 		AcceptanceParity.convertPrioritiesToMax(priorities, accPar.getObjective());
-		// mainLog.println(priorities);
+		mainLog.println(priorities);
 
-		// Solve parity objective on product
+		// Solve parity winning condition on product
 		TGModelChecker mcProduct = new TGModelChecker(this);
 		mcProduct.inheritSettings(this);
-		PG pg = new PG((TG) product.getProductModel(), priorities);
-		BitSet result = mcProduct.computeParity(pg, coalition);
-
+		BitSet result = mcProduct.computeParity((TG) product.getProductModel(), priorities, coalition);
+		
 		return StateValues.createFromBitSet(result, model);
 	}
 
@@ -183,34 +181,41 @@ public class TGModelChecker extends NonProbModelChecker
 	 */
 	protected BitSet computeReach(TG tg, BitSet target) throws PrismException
 	{
-		return reachability.solve(tg, target);
+		RG rg = new RG(tg, target);
+		TGSolution soln = reachabilitySolver.solve(rg);
+		// Compute solution as Player 1 (1-indexed).
+		return soln.get(1).getRegion();
 	}
 
 	/**
 	 * Compute parity
-	 * @param pg PG
+	 * @param tg 2-player TG
 	 * @param priorities State priorities
 	 * @param coalition Players trying to reach the target
 	 */
-	protected BitSet computeParity(PG pg, Coalition coalition) throws PrismException
+	protected BitSet computeParity(TG tg, List<Integer> priorities, Coalition coalition) throws PrismException
 	{
 		// Temporarily make the model a 2-player TG (if not already) by setting coalition
-		pg.getTG().setCoalition(coalition);
-		BitSet res = computeParity(pg);
-		pg.getTG().setCoalition(null);
+		tg.setCoalition(coalition);
+		BitSet res = computeParity(tg, priorities);
+		tg.setCoalition(null);
 		return res;
 	}
 
 	/**
 	 * Compute 2-player parity
-	 * @param pg 2-player PG
+	 * @param tg 2-player TG
 	 * @param priorities List of priorities
 	 */
-	protected BitSet computeParity(PG pg) throws PrismException
+	protected BitSet computeParity(TG tg, List<Integer> priorities) throws PrismException
 	{
-		return zielonkaRecursive.solve(pg);
-		// return priorityPromotion.solve(pg);
-		// return smallProgressMeasures.solve(pg);
+		PG pg = new PG(tg, priorities);
+		// Parity game algorithms can be swapped here
+		TGSolution soln = zielonkaRecursiveSolver.solve(pg);
+//		TGSolution soln = priorityPromotionSolver.solve(pg);
+//		TGSolution soln = smallProgressMeasuresSolver.solve(pg);
+		// Compute solution as Player 1 (1-indexed).
+		return soln.get(1).getRegion();
 	}
 
 }

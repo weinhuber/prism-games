@@ -38,3 +38,12 @@ prism/\.project
 # Eclipse project custom settings
 \.settings/
 prism/\.settings/
+
+# Parity game evaluation
+prism/tests/pg/*.gm
+prism/tests/benchmark/boardgames/*.gm
+prism/tests/benchmark/clique/*.gm
+prism/tests/benchmark/leaderelection/*.gm
+prism/tests/benchmark/lift/*.gm
+prism/tests/benchmark/onebit/*.gm
+prism/tests/benchmark/random/*/*.gm

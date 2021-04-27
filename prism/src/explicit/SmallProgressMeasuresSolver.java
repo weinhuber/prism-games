@@ -14,40 +14,40 @@ import prism.PrismComponent;
  * Solve parity games using the small progress measures algorithm.
  * We treat null as our T element. 
  */
-public class SmallProgressMeasures extends PGSolver
+public class SmallProgressMeasuresSolver extends PGSolver
 {
 
 	/**
 	 * Measure comparator for lexicographic order
 	 */
-	private static final Comparator<int[]> measureComparator = SmallProgressMeasures::compare;
+	private static final Comparator<int[]> measureComparator = SmallProgressMeasuresSolver::compare;
 
 	/**
 	 * Create a new parity game solver.
 	 */
-	public SmallProgressMeasures(PrismComponent parent)
+	public SmallProgressMeasuresSolver(PrismComponent parent)
 	{
 		super(parent);
 	}
 
 	@Override
-	public BitSet solve(PG pg)
+	public TGSolution solve(PG pg)
 	{
 		// Convert PG to the min definition as SPM assumes this
 		PG parityGame = new PG(pg);
 		parityGame.convertMaxToMin();
 
-		WinningRegions W = new WinningRegions();
-		W.w2 = jurdzinksi(parityGame);
-		W.w1 = (BitSet) W.w2.clone();
-		W.w1.flip(0, pg.getTG().getNumStates());
-		return W.w1;
+		TGSolution soln = new TGSolution();
+		soln.set(2, jurdzinksi(parityGame));
+		soln.get(1).setRegion((BitSet) soln.get(2).getRegion().clone());
+		soln.get(1).getRegion().flip(0, pg.getTG().getNumStates());
+		return soln;
 	}
 
-	private BitSet jurdzinksi(PG pg)
+	private WinningPair jurdzinksi(PG pg)
 	{
 		// Maximum priority
-		int d = Collections.max(pg.getPriorities());
+		int d = pg.maxPriority();
 		// Number of states for a priority
 		int[] max = new int[d + 1];
 		for (Map.Entry<Integer, BitSet> entry : pg.getPriorityMap().entrySet()) {
@@ -58,11 +58,17 @@ public class SmallProgressMeasures extends PGSolver
 		// Progress measure
 		int[][] rho = new int[pg.getTG().getNumStates()][d + 1];
 
-		// LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, pg.getTG());
-		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, pg.getTG(), rho);
+		// Lifting strategies can be swapped here
+//		LiftingStrategy liftingStrategy = new LinearLiftingStrategy(parent, pg);
+		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, pg, rho);
 		int v = liftingStrategy.next();
 
 		while (v != LiftingStrategy.NO_STATE) {
+			// (For benchmarking)
+			if (Thread.currentThread().isInterrupted()) {
+				return null;
+			}
+			
 			int[] lift = lift(pg, rho, max, d, v);
 			if (measureComparator.compare(rho[v], lift) < 0) {
 				rho[v] = lift;
@@ -71,14 +77,14 @@ public class SmallProgressMeasures extends PGSolver
 			v = liftingStrategy.next();
 		}
 
-		// SPM solves for player 2
-		BitSet w2 = new BitSet();
-		for (int i = 0; i < rho.length; i++) {
-			if (rho[i] == null) {
-				w2.set(i);
+		// SPM solves for Player 2
+		WinningPair pair = new WinningPair();
+		for (int s = 0; s < rho.length; s++) {
+			if (rho[s] == null) {
+				pair.getRegion().set(s);
 			}
 		}
-		return w2;
+		return pair;
 	}
 
 	private static int[] lift(PG pg, int[][] rho, int[] max, int d, int v)

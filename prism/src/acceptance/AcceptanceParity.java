@@ -3,6 +3,7 @@ package acceptance;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -11,7 +12,7 @@ import prism.PrismException;
 import prism.PrismNotSupportedException;
 
 /**
- * A Parity acceptance condition. The acceptance condition is accepting if 
+ * A parity acceptance condition. The acceptance condition is accepting if 
  * "the minimal/maximal priority visited infinitely often is even/odd".
  */
 public class AcceptanceParity implements AcceptanceOmega
@@ -150,14 +151,13 @@ public class AcceptanceParity implements AcceptanceOmega
 	}
 
 	/** Get a list of priorities for states 0<=s<n */
-	public List<Integer> getPriorities(int n)
-	{
+	public List<Integer> getPriorities(int n) {
 		List<Integer> priorities = new ArrayList<>(n);
 		for (int i = 0; i < n; i++) {
 			priorities.add(-1);
 			for (int p = 0; p < numPriorities; p++) {
 				if (accSets.get(p).get(i)) {
-					priorities.set(i,p);
+					priorities.set(i, p);
 					continue;
 				}
 			}
@@ -323,21 +323,18 @@ public class AcceptanceParity implements AcceptanceOmega
 
 	// Utility functions
 	
-	public static void replaceMissingPriorities(List<Integer> priorities, Objective objective)
-	{
+	public static void replaceMissingPriorities(List<Integer> priorities, Objective objective) {
 		// Add a dummy priority if some are missing
 		if (priorities.contains(-1)) {
-			int n = priorities.size();
 			if (objective == AcceptanceParity.Objective.MIN) {
-				int maxPriority = maxPriority(priorities);
-				for (int s = 0; s < n; s++) {
+				int maxPriority = Collections.max(priorities);
+				for (int s = 0; s < priorities.size(); s++) {
 					if (priorities.get(s) == -1) {
 						priorities.set(s, maxPriority + 1);
 					}
 				}
 			} else {
-				int minPriority = minPriority(priorities);
-				for (int s = 0; s < n; s++) {
+				for (int s = 0; s < priorities.size(); s++) {
 					if (priorities.get(s) == -1) {
 						priorities.set(s, 0);
 					} else {
@@ -347,59 +344,36 @@ public class AcceptanceParity implements AcceptanceOmega
 			}
 		}
 	}
-	
-	public static void convertPrioritiesToEven(List<Integer> priorities, Parity parity)
-	{
+
+	public static void convertPrioritiesToEven(List<Integer> priorities, Parity parity) {
 		if (parity == AcceptanceParity.Parity.ODD) {
-			int n = priorities.size();
-			for (int s = 0; s < n; s++) {
+			for (int s = 0; s < priorities.size(); s++) {
 				priorities.set(s, priorities.get(s) + 1);
 			}
 			shiftPiorities(priorities);
 		}
 	}
-	
-	public static void convertPrioritiesToMax(List<Integer> priorities, Objective objective)
-	{
+
+	public static void convertPrioritiesToMax(List<Integer> priorities, Objective objective) {
 		if (objective == AcceptanceParity.Objective.MIN) {
-			int d = maxPriority(priorities);
+			int d = Collections.max(priorities);
 			if (d % 2 == 1) {
 				d++;
 			}
-			int n = priorities.size();
-			for (int s = 0; s < n; s++) {
+			for (int s = 0; s < priorities.size(); s++) {
 				priorities.set(s, d - priorities.get(s));
 			}
 			shiftPiorities(priorities);
 		}
 	}
-	
-	public static void shiftPiorities(List<Integer> priorities)
-	{
+
+	public static void shiftPiorities(List<Integer> priorities) {
 		// Shift so min is 0 or 1
-		int minPriority = minPriority(priorities);
+		int minPriority = Collections.min(priorities);
 		int shift = minPriority % 2 == 0 ? -minPriority : 1 - minPriority;
-		int n = priorities.size();
-		for (int s = 0; s < n; s++) {
+		for (int s = 0; s < priorities.size(); s++) {
 			priorities.set(s, priorities.get(s) + shift);
 		}
 	}
-	
-	public static int minPriority(List<Integer> priorities)
-	{
-		int minPriority = Integer.MAX_VALUE;
-		for (int p : priorities) {
-			minPriority = Math.min(minPriority, p);
-		}
-		return minPriority;
-	}
-	
-	public static int maxPriority(List<Integer> priorities)
-	{
-		int maxPriority = Integer.MIN_VALUE;
-		for (int p : priorities) {
-			maxPriority = Math.max(maxPriority, p);
-		}
-		return maxPriority;
-	}
+
 }

@@ -5,8 +5,7 @@ import prism.PrismComponent;
 /**
  * Lifting strategy for the small progress measures algorithm.
  */
-public abstract class LiftingStrategy
-{
+public abstract class LiftingStrategy {
 
 	/**
 	 * Indicator for there being no more states left to lift
@@ -18,21 +17,21 @@ public abstract class LiftingStrategy
 	 */
 	protected final PrismComponent parent;
 	/**
-	 * Turn-based game (TG)
+	 * Parity game (PG)
 	 */
-	protected final TG tg;
+	protected final PG pg;
 
 	/**
 	 * Create a LiftingStrategy.
 	 */
-	public LiftingStrategy(PrismComponent parent, TG tg)
-	{
+	public LiftingStrategy(PrismComponent parent, PG pg) {
 		this.parent = parent;
-		this.tg = tg;
+		this.pg = pg;
 	}
 
 	/**
 	 * Notify the lifting strategy a state has been successfully lifted.
+	 * 
 	 * @param s Index of state (0-indexed)
 	 */
 	public abstract void lifted(int s);

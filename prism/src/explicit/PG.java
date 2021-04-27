@@ -57,7 +57,29 @@ public class PG
 	public PG()
 	{
 	}
+	
+	public int maxPriority() {
+		return Collections.max(priorities);
+	}
 
+	public void convertMaxToMin()
+	{
+		// Maximum priority
+		int d = Collections.max(priorities);
+		// Even upper bound for the maximum priority d
+		int p = d + (d % 2);
+
+		for (int i = 0; i < priorities.size(); i++) {
+			priorities.set(i, p - priorities.get(i));
+		}
+
+		Map<Integer, BitSet> oldPriorityMap = priorityMap;
+		priorityMap = new HashMap<>();
+		for (int oldPriority : oldPriorityMap.keySet()) {
+			priorityMap.put(p - oldPriority, oldPriorityMap.get(oldPriority));
+		}
+	}
+	
 	public PG subgame(BitSet states)
 	{
 		PG pg = new PG(this);
@@ -91,24 +113,6 @@ public class PG
 
 			pg.priorities.set(s, -1);
 		});
-	}
-
-	public void convertMaxToMin()
-	{
-		// Maximum priority
-		int d = Collections.max(priorities);
-		// Even upper bound for the maximum priority d
-		int p = d + (d % 2);
-
-		for (int i = 0; i < priorities.size(); i++) {
-			priorities.set(i, p - priorities.get(i));
-		}
-
-		Map<Integer, BitSet> oldPriorityMap = priorityMap;
-		priorityMap = new HashMap<>();
-		for (int oldPriority : oldPriorityMap.keySet()) {
-			priorityMap.put(p - oldPriority, oldPriorityMap.get(oldPriority));
-		}
 	}
 
 	public TG getTG()

@@ -26,6 +26,7 @@
 
 package explicit;
 
+import java.io.File;
 import java.util.BitSet;
 
 public class Utils
@@ -282,4 +283,18 @@ public class Utils
 				return true;
 		return false;
 	}
+	
+	/**
+	 * Purge the contents of a directory recursively. 
+	 */
+	public static void purgeDirectory(File dir)
+	{
+		for (File file : dir.listFiles()) {
+			if (file.isDirectory()) {
+				purgeDirectory(file);
+			}
+			file.delete();
+		}
+	}
+	
 }

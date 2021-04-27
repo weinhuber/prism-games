@@ -1,7 +1,6 @@
 package explicit;
 
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,30 +10,35 @@ import prism.PrismComponent;
 /**
  * Solve parity games using the priority promotion algorithm.
  */
-public class PriorityPromotion extends PGSolver
+public class PriorityPromotionSolver extends PGSolver
 {
 
 	/**
 	 * Create a new parity game solver.
 	 */
-	public PriorityPromotion(PrismComponent parent)
+	public PriorityPromotionSolver(PrismComponent parent)
 	{
 		super(parent);
 	}
 
 	@Override
-	public BitSet solve(PG pg)
+	public TGSolution solve(PG pg)
 	{
 		PG parityGame = pg;
-		WinningRegions W = new WinningRegions();
+		TGSolution soln = new TGSolution();
 
 		while (!parityGame.getTG().getActiveStates().isEmpty()) {
+			// (For benchmarking)
+			if (Thread.currentThread().isInterrupted()) {
+				return null;
+			}
+			
 			Pair<Integer, BitSet> dominion = searchDominion(parityGame);
-			W.get(dominion.getKey()).or(dominion.getValue());
+			soln.get(dominion.getKey()).getRegion().or(dominion.getValue());
 			parityGame = parityGame.difference(dominion.getValue());
 		}
 
-		return W.w1;
+		return soln;
 	}
 
 	private Pair<Integer, BitSet> searchDominion(PG pg)
@@ -43,9 +47,14 @@ public class PriorityPromotion extends PGSolver
 		pg.getTG().getActiveStates().stream().forEach(s -> {
 			r.put(s, -1); // -1 is our bottom
 		});
-		int p = Collections.max(pg.getPriorities());
+		int p = pg.maxPriority();
 
 		while (true) {
+			// (For benchmarking)
+			if (Thread.currentThread().isInterrupted()) {
+				return null;
+			}
+			
 			int alpha = p % 2 == 0 ? 1 : 2;
             int alphaBar = alpha == 1 ? 2 : 1;
 
@@ -64,7 +73,8 @@ public class PriorityPromotion extends PGSolver
 			.map(Map.Entry::getKey)
 			.forEach(s -> A.set(s));
 
-			BitSet Z = pg.getTG().subgame(Subgame).attractor(alpha, A, parent);
+			BitSet Z = pg.getTG().subgame(Subgame)
+					.attractor(alpha, A, parent).getRegion();
 			BitSet finalZ = Z;
 
 			BitSet Open = Z.stream()
@@ -101,7 +111,7 @@ public class PriorityPromotion extends PGSolver
 				.map(Map.Entry::getKey)
 				.forEach(s -> r.put(s, -1));
 			} else {
-				Z = pg.getTG().attractor(alpha, Z, parent);
+				Z = pg.getTG().attractor(alpha, Z, parent).getRegion();
 				return new Pair<>(alpha, Z);
 			}
 		}

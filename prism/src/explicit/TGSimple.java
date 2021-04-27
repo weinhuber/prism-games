@@ -195,7 +195,7 @@ public class TGSimple extends LTSSimple implements TG
 	// Attractor
 
 	@Override
-	public BitSet attractor(int player, BitSet target, prism.PrismComponent parent)
+	public WinningPair attractor(int player, BitSet target, prism.PrismComponent parent)
 	{
 		Map<Integer, Integer> outdegree = new HashMap<>();
 		getActiveStates().stream().forEach(s -> {
@@ -206,8 +206,10 @@ public class TGSimple extends LTSSimple implements TG
 
 		Queue<Integer> queue = new LinkedList<Integer>();
 		target.stream().forEach(s -> queue.add(s));
+		WinningPair pair = new WinningPair();
 		BitSet attractor = (BitSet) target.clone();
-		PredecessorRelation pre = getPredecessorRelation(parent, false);
+		pair.setRegion(attractor);
+		PredecessorRelation pre = getPredecessorRelation(parent, true);
 
 		while (!queue.isEmpty()) {
 			int from = queue.poll();
@@ -221,6 +223,7 @@ public class TGSimple extends LTSSimple implements TG
 					if (attractor.get(from)) {
 						queue.add(to);
 						attractor.set(to);
+						pair.getStrategy().put(to, from);
 					}
 				} else {
 					outdegree.put(to, outdegree.get(to) - 1);
@@ -232,9 +235,9 @@ public class TGSimple extends LTSSimple implements TG
 			}
 		}
 
-		return attractor;
+		return pair;
 	}
-
+	
 	@Override
 	public TG subgame(BitSet states)
 	{
