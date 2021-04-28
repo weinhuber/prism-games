@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Winning pair (region, strategy) for a player in a 2-player turn-based game (TG).
+ * Winning pair (region, strategy) for a player in a turn-based game (TG).
  */
 public class WinningPair
 {
@@ -16,6 +16,7 @@ public class WinningPair
 	protected BitSet region = new BitSet();
 	/**
 	 * Winning strategy.
+	 * TreeMap is used to print the strategy in the order of vertices.
 	 */
 	protected Map<Integer, Integer> strategy = new TreeMap<>();
 
