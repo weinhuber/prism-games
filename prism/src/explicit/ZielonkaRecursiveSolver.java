@@ -24,7 +24,6 @@ public class ZielonkaRecursiveSolver extends PGSolver
 	public TGSolution solve(PG pg)
 	{
 		TGSolution soln = zielonka(pg);
-		parent.getLog().println(soln);
 		return soln;
 	}
 

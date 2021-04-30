@@ -99,8 +99,12 @@ public interface TG extends LTS, PlayerInfoOwner
 	 */
 	public int getPlayer(int s);
 
+	/**
+	 * Get the active states. 
+	 * This is useful in to see what states are still present in subgames.
+	 */
 	public BitSet getActiveStates();
-	
+
 	// Attractor
 
 	/**
@@ -109,11 +113,19 @@ public interface TG extends LTS, PlayerInfoOwner
 	 * @param parent a PrismComponent (for obtaining the log)
 	 */
 	public WinningPair attractor(int player, BitSet target, prism.PrismComponent parent);
-	
+
+	/**
+	 * Compute the subgame with the given states.
+	 * @param states states
+	 */
 	public TG subgame(BitSet states);
-	
+
+	/**
+	 * Compute the subgame without the given states.
+	 * @param states states
+	 */
 	public TG difference(BitSet states);
-	
+
 	/**
 	 * Get an iterator over the transitions from choice {@code i} of state {@code s}.
 	 */

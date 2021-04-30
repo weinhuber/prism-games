@@ -32,7 +32,7 @@ public class PGTestCase
 	{
 		boolean correct = true;
 
-		for (int i = 1; i <= 5; i++) {
+		for (int i = 1; i <= 40; i++) {
 			File file = new File(PGBenchmark.PRISM_PG + "/random" + i + ".gm");
 			PG pg;
 			try {

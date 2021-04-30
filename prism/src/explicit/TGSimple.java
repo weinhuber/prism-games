@@ -206,38 +206,37 @@ public class TGSimple extends LTSSimple implements TG
 
 		Queue<Integer> queue = new LinkedList<Integer>();
 		target.stream().forEach(s -> queue.add(s));
-		WinningPair pair = new WinningPair();
-		BitSet attractor = (BitSet) target.clone();
-		pair.setRegion(attractor);
+		WinningPair attractor = new WinningPair();
+		attractor.setRegion((BitSet) target.clone());
 		PredecessorRelation pre = getPredecessorRelation(parent, true);
 
 		while (!queue.isEmpty()) {
 			int from = queue.poll();
 
 			for (int to : pre.getPre(from)) {
-				if (attractor.get(to)) {
+				if (attractor.getRegion().get(to)) {
 					continue;
 				}
 
 				if (getPlayer(to) == player) {
-					if (attractor.get(from)) {
+					if (attractor.getRegion().get(from)) {
 						queue.add(to);
-						attractor.set(to);
-						pair.getStrategy().put(to, from);
+						attractor.getRegion().set(to);
+						attractor.getStrategy().put(to, from);
 					}
 				} else {
 					outdegree.put(to, outdegree.get(to) - 1);
 					if (outdegree.get(to) == 0) {
 						queue.add(to);
-						attractor.set(to);
+						attractor.getRegion().set(to);
 					}
 				}
 			}
 		}
 
-		return pair;
+		return attractor;
 	}
-	
+
 	@Override
 	public TG subgame(BitSet states)
 	{
@@ -250,6 +249,7 @@ public class TGSimple extends LTSSimple implements TG
 		return subgameByStateFilter(s -> !states.get(s));
 	}
 
+	// Construct the subgame with a given filter of states
 	private TG subgameByStateFilter(Predicate<Integer> pred)
 	{
 		TGSimple tg = new TGSimple(numStates);

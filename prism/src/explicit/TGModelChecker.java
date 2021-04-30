@@ -183,6 +183,8 @@ public class TGModelChecker extends NonProbModelChecker
 	{
 		RG rg = new RG(tg, target);
 		TGSolution soln = reachabilitySolver.solve(rg);
+		// Log the solution
+		mainLog.println(soln);
 		// Compute solution as Player 1 (1-indexed).
 		return soln.get(1).getRegion();
 	}
@@ -214,6 +216,8 @@ public class TGModelChecker extends NonProbModelChecker
 		TGSolution soln = zielonkaRecursiveSolver.solve(pg);
 		// TGSolution soln = priorityPromotionSolver.solve(pg);
 		// TGSolution soln = smallProgressMeasuresSolver.solve(pg);
+		// Log the solution
+		mainLog.println(soln);
 		// Compute solution as Player 1 (1-indexed).
 		return soln.get(1).getRegion();
 	}

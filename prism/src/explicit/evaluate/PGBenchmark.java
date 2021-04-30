@@ -17,7 +17,8 @@ import prism.PrismComponent;
 
 public abstract class PGBenchmark {
 
-	public static final String PGSOLVER_BIN = "/home/shahram/Desktop/pgsolver/bin";
+	/** Location to the PGSolver bin folder. Change this. */
+	public static final String PGSOLVER_BIN = "";
 
 	public static final String PRISM_TESTS = "./prism/tests";
 	public static final String PRISM_PG = PRISM_TESTS + "/pg";

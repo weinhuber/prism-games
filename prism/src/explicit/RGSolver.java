@@ -55,7 +55,6 @@ public class RGSolver extends TGSolver
 			}
 		});
 
-		parent.getLog().println(soln);
 		return soln;
 	}
 

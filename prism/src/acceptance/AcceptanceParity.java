@@ -325,9 +325,9 @@ public class AcceptanceParity implements AcceptanceOmega
 
 	// Utility functions
 
+	/** Add dummy priorities to a list of priorities if some are missing */
 	public static void replaceMissingPriorities(List<Integer> priorities, Objective objective)
 	{
-		// Add a dummy priority if some are missing
 		if (priorities.contains(-1)) {
 			if (objective == AcceptanceParity.Objective.MIN) {
 				int maxPriority = Collections.max(priorities);
@@ -348,6 +348,7 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
+	/** Convert a list of priorities to the even parity */
 	public static void convertPrioritiesToEven(List<Integer> priorities, Parity parity)
 	{
 		if (parity == AcceptanceParity.Parity.ODD) {
@@ -358,6 +359,7 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
+	/** Convert a list of priorities to the max definition */
 	public static void convertPrioritiesToMax(List<Integer> priorities, Objective objective)
 	{
 		if (objective == AcceptanceParity.Objective.MIN) {
@@ -372,9 +374,9 @@ public class AcceptanceParity implements AcceptanceOmega
 		}
 	}
 
+	/** Shift a list priorities so that the smallest is 0 or 1 */
 	public static void shiftPiorities(List<Integer> priorities)
 	{
-		// Shift so min is 0 or 1
 		int minPriority = Collections.min(priorities);
 		int shift = minPriority % 2 == 0 ? -minPriority : 1 - minPriority;
 		for (int s = 0; s < priorities.size(); s++) {
