@@ -45,13 +45,14 @@ public class TGSolution
 	@Override
 	public String toString()
 	{
-		String s = "TGSolution:\n";
+		// Add a new line before and after.
+		String s = "\nTGSolution:\n";
 		s += "Player 1:\n";
 		s += "Region: " + w1.getRegion() + "\n";
 		s += "Strategy: " + w1.getStrategy() + "\n";
 		s += "Player 2:\n";
 		s += "Region: " + w2.getRegion() + "\n";
-		s += "Strategy: " + w2.getStrategy();
+		s += "Strategy: " + w2.getStrategy() + "\n";
 		return s;
 	}
 
