@@ -9,17 +9,17 @@ public class TGSolution
 	/**
 	 * Winning pair for player 1 (1-indexed). 
 	 */
-	protected WinningPair w1 = new WinningPair();
+	protected RegionStrategy w1 = new RegionStrategy();
 	/**
 	 * Winning pair for player 2 (1-indexed). 
 	 */
-	protected WinningPair w2 = new WinningPair();
+	protected RegionStrategy w2 = new RegionStrategy();
 
 	/**
 	 * Get the winning pair.
 	 * @param player player (1-indexed)
 	 */
-	public WinningPair get(int player)
+	public RegionStrategy get(int player)
 	{
 		if (player == 1) {
 			return w1;
@@ -33,7 +33,7 @@ public class TGSolution
 	 * @param player player (1-indexed)
 	 * @param pair Winning pair
 	 */
-	public void set(int player, WinningPair pair)
+	public void set(int player, RegionStrategy pair)
 	{
 		if (player == 1) {
 			w1 = pair;

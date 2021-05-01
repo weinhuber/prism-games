@@ -43,14 +43,14 @@ public class ZielonkaRecursiveSolver extends PGSolver
 		BitSet U = pg.getPriorityMap().get(d);
 		int i = d % 2 == 0 ? 1 : 2;
 		int j = i == 1 ? 2 : 1;
-		Map<Integer, Integer> tau = new TreeMap<>();
 		// Arbitrary initial strategy for player p on U
+		Map<Integer, Integer> tau = new TreeMap<>();
 		U.stream().forEach(s -> {
 			if (pg.getTG().getPlayer(s) == i) {
 				tau.put(s, pg.getTG().getSuccessors(s).next());
 			}
 		});
-		WinningPair A = pg.getTG().attractor(i, U, parent);
+		RegionStrategy A = pg.getTG().attractor(i, U, parent);
 		TGSolution W1 = zielonka(pg.difference(A.getRegion()));
 
 		if (W1.get(j).getRegion().isEmpty()) {
@@ -58,9 +58,9 @@ public class ZielonkaRecursiveSolver extends PGSolver
 			W1.get(i).getStrategy().putAll(tau);
 			W1.get(i).getStrategy().putAll(A.getStrategy());
 			W.set(i, W1.get(i));
-			W.set(j, new WinningPair());
+			W.set(j, new RegionStrategy());
 		} else {
-			WinningPair B = pg.getTG().attractor(j, W1.get(j).getRegion(), parent);
+			RegionStrategy B = pg.getTG().attractor(j, W1.get(j).getRegion(), parent);
 			TGSolution W2 = zielonka(pg.difference(B.getRegion()));
 			W.set(i, W2.get(i));
 			W2.get(j).getRegion().or(B.getRegion());

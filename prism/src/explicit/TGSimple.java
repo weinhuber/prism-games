@@ -194,8 +194,9 @@ public class TGSimple extends LTSSimple implements TG
 
 	// Attractor
 
+	// Attractor is computed through a backward breadth-first search.
 	@Override
-	public WinningPair attractor(int player, BitSet target, prism.PrismComponent parent)
+	public RegionStrategy attractor(int player, BitSet target, prism.PrismComponent parent)
 	{
 		Map<Integer, Integer> outdegree = new HashMap<>();
 		getActiveStates().stream().forEach(s -> {
@@ -204,27 +205,33 @@ public class TGSimple extends LTSSimple implements TG
 			}
 		});
 
+		RegionStrategy attractor = new RegionStrategy();
+		attractor.setRegion((BitSet) target.clone());
+
 		Queue<Integer> queue = new LinkedList<Integer>();
 		target.stream().forEach(s -> queue.add(s));
-		WinningPair attractor = new WinningPair();
-		attractor.setRegion((BitSet) target.clone());
 		PredecessorRelation pre = getPredecessorRelation(parent, true);
 
 		while (!queue.isEmpty()) {
 			int from = queue.poll();
 
 			for (int to : pre.getPre(from)) {
+				// Self-loop
 				if (attractor.getRegion().get(to)) {
+					if (getPlayer(to) == player) {
+						attractor.getStrategy().put(to, from);
+					}
 					continue;
 				}
 
+				// Player whose goal it is to reach the target set
 				if (getPlayer(to) == player) {
 					if (attractor.getRegion().get(from)) {
 						queue.add(to);
 						attractor.getRegion().set(to);
 						attractor.getStrategy().put(to, from);
 					}
-				} else {
+				} else { // Player trying to prevent this
 					outdegree.put(to, outdegree.get(to) - 1);
 					if (outdegree.get(to) == 0) {
 						queue.add(to);

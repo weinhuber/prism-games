@@ -44,6 +44,9 @@ public class PGTestCase
 
 			System.out.println("random" + i + ".gm");
 
+			// Winning regions are compared.
+			// Winning strategies are not compared as they are not unique.
+
 			BitSet win1 = zr.solve(pg).get(1).getRegion();
 			System.out.println(win1);
 			BitSet win2 = pp.solve(pg).get(1).getRegion();

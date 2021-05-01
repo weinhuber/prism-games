@@ -1,13 +1,14 @@
 package explicit;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
+import prism.Pair;
 import prism.PrismComponent;
 
 /**
@@ -37,14 +38,11 @@ public class SmallProgressMeasuresSolver extends PGSolver
 		PG parityGame = new PG(pg);
 		parityGame.convertMaxToMin();
 
-		TGSolution soln = new TGSolution();
-		soln.set(2, jurdzinksi(parityGame));
-		soln.get(1).setRegion((BitSet) soln.get(2).getRegion().clone());
-		soln.get(1).getRegion().flip(0, pg.getTG().getNumStates());
+		TGSolution soln = jurdzinksi(parityGame);
 		return soln;
 	}
 
-	private WinningPair jurdzinksi(PG pg)
+	private TGSolution jurdzinksi(PG pg)
 	{
 		// Maximum priority
 		int d = pg.maxPriority();
@@ -63,13 +61,21 @@ public class SmallProgressMeasuresSolver extends PGSolver
 		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, pg, rho);
 		int v = liftingStrategy.next();
 
+		// Player 1's strategy
+		Map<Integer, Integer> strategy = new TreeMap<>();
+
 		while (v != LiftingStrategy.NO_STATE) {
 			// (For benchmarking)
 			if (Thread.currentThread().isInterrupted()) {
 				return null;
 			}
 
-			int[] lift = lift(pg, rho, max, d, v);
+			Pair<int[], Integer> liftPair = lift(pg, rho, max, d, v);
+			int[] lift = liftPair.getKey();
+			if (pg.getTG().getPlayer(v) == 1) {
+				strategy.put(v, liftPair.getValue());
+			}
+
 			if (measureComparator.compare(rho[v], lift) < 0) {
 				rho[v] = lift;
 				liftingStrategy.lifted(v);
@@ -77,31 +83,41 @@ public class SmallProgressMeasuresSolver extends PGSolver
 			v = liftingStrategy.next();
 		}
 
-		// SPM solves for Player 2
-		WinningPair pair = new WinningPair();
+		TGSolution soln = new TGSolution();
+
 		for (int s = 0; s < rho.length; s++) {
+			// SPM computes Player 2's winning region
 			if (rho[s] == null) {
-				pair.getRegion().set(s);
+				soln.get(2).getRegion().set(s);
+			} else { // Remaining are Player 1's
+				soln.get(1).getRegion().set(s);
+				// SPM also computes Player 1's winning strategy
+				soln.get(1).setStrategy(strategy);
 			}
 		}
-		return pair;
+
+		return soln;
 	}
 
-	private static int[] lift(PG pg, int[][] rho, int[] max, int d, int v)
+	// Return the lifted measure as well as the vertex (min/max)imising it
+	// This is useful in the case of Player 1 to compute her strategy.
+	private static Pair<int[], Integer> lift(PG pg, int[][] rho, int[] max, int d, int v)
 	{
-		List<int[]> progs = new ArrayList<>();
-		int[] prog;
-
+		Map<int[], Integer> progs = new HashMap<>();
 		pg.getTG().getSuccessors(v).stream().forEach(w -> {
-			progs.add(prog(pg, rho, max, d, v, w));
+			progs.put(prog(pg, rho, max, d, v, w), w);
 		});
+
+		int[] prog;
 		if (pg.getTG().getPlayer(v) == 1) {
-			prog = Collections.min(progs, measureComparator);
+			prog = Collections.min(progs.keySet(), measureComparator);
 		} else {
-			prog = Collections.max(progs, measureComparator);
+			prog = Collections.max(progs.keySet(), measureComparator);
 		}
 
-		return Collections.max(Arrays.asList(rho[v], prog), measureComparator);
+		return new Pair<>(
+				Collections.max(Arrays.asList(rho[v], prog), measureComparator), 
+				progs.get(prog));
 	}
 
 	private static int[] prog(PG pg, int[][] rho, int[] max, int d, int v, int w)

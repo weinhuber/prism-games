@@ -28,28 +28,31 @@ public class RGSolver extends TGSolver
 	{
 		TGSolution soln = new TGSolution();
 
-		WinningPair pair = rg.getTG().attractor(1, rg.target, parent);
-		soln.set(1, pair);
-		soln.get(2).setRegion((BitSet) pair.getRegion().clone());
+		RegionStrategy rs = rg.getTG().attractor(1, rg.target, parent);
+		soln.set(1, rs);
+		soln.get(2).setRegion((BitSet) rs.getRegion().clone());
 		soln.get(2).getRegion().flip(0, rg.getTG().getNumStates());
 
 		// Complete the winning strategies
 		rg.getTG().getActiveStates().stream().forEach(s -> {
 			// Arbitrary choice for Player 1
-			if (rg.getTG().getPlayer(s) == 1 && !pair.getStrategy().containsKey(s)) {
-				pair.getStrategy().put(s, rg.getTG().getSuccessors(s).next());
+			if (rg.getTG().getPlayer(s) == 1 && !rs.getStrategy().containsKey(s)) {
+				rs.getStrategy().put(s, rg.getTG().getSuccessors(s).next());
 			}
+
 			// For Player 2, keep the token out of the attractor
 			// Arbitrary choice if unable to.
 			if (rg.getTG().getPlayer(s) == 2) {
 				SuccessorsIterator successors = rg.getTG().getSuccessors(s);
 				while (successors.hasNext()) {
 					int succ = successors.next();
-					if (!pair.getRegion().get(succ)) {
+					if (!rs.getRegion().get(succ)) {
 						soln.get(2).getStrategy().put(s, succ);
+						break;
 					}
 				}
-				if (!pair.getStrategy().containsKey(s)) {
+
+				if (!rs.getStrategy().containsKey(s)) {
 					soln.get(2).getStrategy().put(s, rg.getTG().getSuccessors(s).next());
 				}
 			}

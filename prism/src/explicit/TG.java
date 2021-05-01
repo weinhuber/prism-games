@@ -112,7 +112,7 @@ public interface TG extends LTS, PlayerInfoOwner
 	 * @param target Target states
 	 * @param parent a PrismComponent (for obtaining the log)
 	 */
-	public WinningPair attractor(int player, BitSet target, prism.PrismComponent parent);
+	public RegionStrategy attractor(int player, BitSet target, prism.PrismComponent parent);
 
 	/**
 	 * Compute the subgame with the given states.

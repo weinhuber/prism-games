@@ -32,16 +32,17 @@ public class PriorityPromotionSolver extends PGSolver
 			if (Thread.currentThread().isInterrupted()) {
 				return null;
 			}
-			
-			Pair<Integer, BitSet> dominion = searchDominion(parityGame);
-			soln.get(dominion.getKey()).getRegion().or(dominion.getValue());
-			parityGame = parityGame.difference(dominion.getValue());
+
+			Pair<Integer, RegionStrategy> dominion = searchDominion(parityGame);
+			soln.get(dominion.getKey()).getRegion().or(dominion.getValue().getRegion());
+			soln.get(dominion.getKey()).getStrategy().putAll(dominion.getValue().getStrategy());
+			parityGame = parityGame.difference(dominion.getValue().getRegion());
 		}
 
 		return soln;
 	}
 
-	private Pair<Integer, BitSet> searchDominion(PG pg)
+	private Pair<Integer, RegionStrategy> searchDominion(PG pg)
 	{
 		Map<Integer, Integer> r = new HashMap<>();
 		pg.getTG().getActiveStates().stream().forEach(s -> {
@@ -73,18 +74,17 @@ public class PriorityPromotionSolver extends PGSolver
 			.map(Map.Entry::getKey)
 			.forEach(s -> A.set(s));
 
-			BitSet Z = pg.getTG().subgame(Subgame)
-					.attractor(alpha, A, parent).getRegion();
-			BitSet finalZ = Z;
+			RegionStrategy Z = pg.getTG().subgame(Subgame).attractor(alpha, A, parent);
 
-			BitSet Open = Z.stream()
-					.filter(s -> pg.getTG().getPlayer(s) == alpha && !pg.getTG().someSuccessorsInSet(s, finalZ))
+			BitSet Open = Z.getRegion().stream()
+					.filter(s -> pg.getTG().getPlayer(s) == alpha && 
+								 !pg.getTG().someSuccessorsInSet(s, Z.getRegion()))
 					.collect(BitSet::new, BitSet::set, BitSet::or);
 
-			BitSet Esc = Z.stream()
+			BitSet Esc = Z.getRegion().stream()
 					.filter(s -> pg.getTG().getPlayer(s) == alphaBar)
 					.flatMap(s -> pg.getTG().getSuccessors(s).stream())
-					.filter(s -> !finalZ.get(s))
+					.filter(s -> !Z.getRegion().get(s))
 					.collect(BitSet::new, BitSet::set, BitSet::or);
 
 			BitSet EscAndSubgame = (BitSet) Esc.clone();
@@ -92,10 +92,10 @@ public class PriorityPromotionSolver extends PGSolver
 
 			if (!Open.isEmpty() || !EscAndSubgame.isEmpty()) {
 				int finalP1 = p;
-				Z.stream().forEach(s -> r.put(s, finalP1));
+				Z.getRegion().stream().forEach(s -> r.put(s, finalP1));
 
 				p = Subgame.stream()
-						.filter(s -> !finalZ.get(s))
+						.filter(s -> !Z.getRegion().get(s))
 						.map(s -> pg.getPriorities().get(s))
 						.max().getAsInt();
 			} else if (!Esc.isEmpty()) {
@@ -105,14 +105,15 @@ public class PriorityPromotionSolver extends PGSolver
 						.min(Integer::compare).get();
 				int finalP1 = p;
 
-				Z.stream().forEach(s -> r.put(s, finalP1));
+				Z.getRegion().stream().forEach(s -> r.put(s, finalP1));
 				r.entrySet().stream()
 				.filter(entry -> entry.getValue() < finalP1)
 				.map(Map.Entry::getKey)
 				.forEach(s -> r.put(s, -1));
 			} else {
-				Z = pg.getTG().attractor(alpha, Z, parent).getRegion();
-				return new Pair<>(alpha, Z);
+				RegionStrategy Z1 = pg.getTG().attractor(alpha, Z.getRegion(), parent);
+				Z1.getStrategy().putAll(Z.getStrategy());
+				return new Pair<>(alpha, Z1);
 			}
 		}
 	}

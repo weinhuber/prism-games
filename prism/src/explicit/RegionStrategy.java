@@ -5,23 +5,23 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Winning pair (region, strategy) for a player in a turn-based game (TG).
+ * (region, strategy) pair for a player in a turn-based game (TG).
  */
-public class WinningPair
+public class RegionStrategy
 {
 
 	/**
-	 * Winning region.
+	 * The region.
 	 */
 	protected BitSet region = new BitSet();
 	/**
-	 * Winning strategy.
+	 * The strategy.
 	 * TreeMap is used to print the strategy in the order of vertices.
 	 */
 	protected Map<Integer, Integer> strategy = new TreeMap<>();
 
 	/**
-	 * Get the winning region for the player.
+	 * Get the region for the player.
 	 */
 	public BitSet getRegion()
 	{
@@ -29,7 +29,7 @@ public class WinningPair
 	}
 
 	/**
-	 * Set the winning region for the player.
+	 * Set the region for the player.
 	 * @param region region
 	 */
 	public void setRegion(BitSet region)
@@ -38,7 +38,7 @@ public class WinningPair
 	}
 
 	/**
-	 * Get the winning strategy for the player.
+	 * Get the strategy for the player.
 	 */
 	public Map<Integer, Integer> getStrategy()
 	{
@@ -46,7 +46,7 @@ public class WinningPair
 	}
 
 	/**
-	 * Set the winning strategy for the player.
+	 * Set the strategy for the player.
 	 * @param strategy strategy
 	 */
 	public void setStrategy(Map<Integer, Integer> strategy)
