@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 import prism.Pair;
 import prism.PrismComponent;
@@ -44,9 +43,12 @@ public class SmallProgressMeasuresSolver extends PGSolver
 
 	private TGSolution jurdzinksi(PG pg)
 	{
+		TGSolution soln = new TGSolution();
+
 		// Maximum priority
 		int d = pg.maxPriority();
 		// Number of states for a priority
+		// This is a measure just less than the top measure
 		int[] max = new int[d + 1];
 		for (Map.Entry<Integer, BitSet> entry : pg.getPriorityMap().entrySet()) {
 			if (entry.getKey() % 2 != 0) {
@@ -61,29 +63,27 @@ public class SmallProgressMeasuresSolver extends PGSolver
 		LiftingStrategy liftingStrategy = new PredecessorLiftingStrategy(parent, pg, rho);
 		int v = liftingStrategy.next();
 
-		// Player 1's strategy
-		Map<Integer, Integer> strategy = new TreeMap<>();
-
 		while (v != LiftingStrategy.NO_STATE) {
 			// (For benchmarking)
 			if (Thread.currentThread().isInterrupted()) {
 				return null;
 			}
 
-			Pair<int[], Integer> liftPair = lift(pg, rho, max, d, v);
-			int[] lift = liftPair.getKey();
+			Pair<int[], Integer> liftedPair = lift(pg, rho, max, d, v);
+
+			// SPM computes Player 1's winning strategy
 			if (pg.getTG().getPlayer(v) == 1) {
-				strategy.put(v, liftPair.getValue());
+				soln.get(1).getStrategy().put(v, liftedPair.getValue());
 			}
 
-			if (measureComparator.compare(rho[v], lift) < 0) {
-				rho[v] = lift;
+			int[] lifted = liftedPair.getKey();
+			if (measureComparator.compare(rho[v], lifted) < 0) {
+				rho[v] = lifted;
 				liftingStrategy.lifted(v);
 			}
+
 			v = liftingStrategy.next();
 		}
-
-		TGSolution soln = new TGSolution();
 
 		for (int s = 0; s < rho.length; s++) {
 			// SPM computes Player 2's winning region
@@ -91,8 +91,6 @@ public class SmallProgressMeasuresSolver extends PGSolver
 				soln.get(2).getRegion().set(s);
 			} else { // Remaining are Player 1's
 				soln.get(1).getRegion().set(s);
-				// SPM also computes Player 1's winning strategy
-				soln.get(1).setStrategy(strategy);
 			}
 		}
 
@@ -115,9 +113,7 @@ public class SmallProgressMeasuresSolver extends PGSolver
 			prog = Collections.max(progs.keySet(), measureComparator);
 		}
 
-		return new Pair<>(
-				Collections.max(Arrays.asList(rho[v], prog), measureComparator), 
-				progs.get(prog));
+		return new Pair<>(Collections.max(Arrays.asList(rho[v], prog), measureComparator), progs.get(prog));
 	}
 
 	private static int[] prog(PG pg, int[][] rho, int[] max, int d, int v, int w)
