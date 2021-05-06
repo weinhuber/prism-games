@@ -377,7 +377,7 @@ public class HOAF2DA implements HOAConsumer {
 	}
 	
 	/**
-	 * Prepare a Parity acceptance condition from the acc-name header.
+	 * Prepare a parity acceptance condition from the acc-name header.
 	 */
 	private AcceptanceParity prepareAcceptanceParity() throws HOAConsumerException
 	{

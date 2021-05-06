@@ -9,15 +9,18 @@ import java.nio.file.StandardCopyOption;
 import explicit.Utils;
 import explicit.evaluate.PGBenchmark.Lift;
 
-public class PGGeneratorLift extends PGGenerator {
+public class PGGeneratorLift extends PGGenerator
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGGeneratorLift pgGeneratorLift = new PGGeneratorLift();
 		pgGeneratorLift.generate();
 	}
 
 	@Override
-	public void generate() {
+	public void generate()
+	{
 		File dir = new File(PGBenchmark.PRISM_BENCHMARK_LIFT);
 		Utils.purgeDirectory(dir);
 

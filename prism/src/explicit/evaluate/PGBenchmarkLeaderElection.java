@@ -6,15 +6,18 @@ import java.util.concurrent.ExecutionException;
 
 import explicit.PG;
 
-public class PGBenchmarkLeaderElection extends PGBenchmark {
+public class PGBenchmarkLeaderElection extends PGBenchmark
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGBenchmarkLeaderElection pgBenchmarkLeaderElection = new PGBenchmarkLeaderElection();
 		pgBenchmarkLeaderElection.benchmark();
 	}
 
 	@Override
-	public void benchmark() {
+	public void benchmark()
+	{
 		System.out.println("property,states,zr,pp,spm");
 
 		File dir = new File(PRISM_BENCHMARK_LEADER_ELECTION);

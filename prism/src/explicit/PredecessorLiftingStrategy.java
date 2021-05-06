@@ -6,6 +6,9 @@ import prism.PrismComponent;
 
 /**
  * Predecessor lifting strategy for the small progress measures algorithm.
+ * 
+ * A more intelligent lifting strategy compared to the linear lifting strategy where upon lifting a vertex, 
+ * all of its predecessors are successively lifted as it is likely they will require lifting as a result.
  */
 public class PredecessorLiftingStrategy extends LiftingStrategy
 {

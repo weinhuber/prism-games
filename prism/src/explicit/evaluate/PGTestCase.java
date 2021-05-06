@@ -28,11 +28,18 @@ public class PGTestCase
 		pgTestCase.test();
 	}
 
+	/** 
+	 * Tests the parity game algorithms by making sure the solutions computed by each algorithm match.
+	 * 
+	 * 40 randomly generated parity games are used, generated through PGSolver's randomgame program.
+	 */
 	public void test()
 	{
 		boolean correct = true;
 
-		for (int i = 1; i <= 40; i++) {
+		// Change i to be selective in which games are tested.
+		// i can be at most 40.
+		for (int i = 1; i <= 5; i++) {
 			File file = new File(PGBenchmark.PRISM_PG + "/random" + i + ".gm");
 			PG pg;
 			try {

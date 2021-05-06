@@ -101,7 +101,7 @@ public interface TG extends LTS, PlayerInfoOwner
 
 	/**
 	 * Get the active states. 
-	 * This is useful in to see what states are still present in subgames.
+	 * This is useful to see what states are still present in subgames.
 	 */
 	public BitSet getActiveStates();
 

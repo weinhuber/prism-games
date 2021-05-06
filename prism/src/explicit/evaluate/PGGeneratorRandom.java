@@ -9,15 +9,18 @@ import java.nio.file.StandardCopyOption;
 import explicit.Utils;
 import explicit.evaluate.PGBenchmark.Random;
 
-public class PGGeneratorRandom extends PGGenerator {
+public class PGGeneratorRandom extends PGGenerator
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGGeneratorRandom pgGeneratorRandom = new PGGeneratorRandom();
 		pgGeneratorRandom.generate();
 	}
 
 	@Override
-	public void generate() {
+	public void generate()
+	{
 		File dir = new File(PGBenchmark.PRISM_BENCHMARK_RANDOM);
 		Utils.purgeDirectory(dir);
 

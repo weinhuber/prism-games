@@ -116,6 +116,7 @@ public class PredecessorRelation
 	{
 		long timer = System.currentTimeMillis();
 		
+		// These log statements have been commented out to prevent spam when running the parity game algorithms.
 //		parent.getLog().print("Calculating predecessor relation for "+model.getModelType().fullName()+"...  ");
 //		parent.getLog().flush();
 

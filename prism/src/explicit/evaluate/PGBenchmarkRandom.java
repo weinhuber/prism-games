@@ -6,15 +6,18 @@ import java.util.concurrent.ExecutionException;
 
 import explicit.PG;
 
-public class PGBenchmarkRandom extends PGBenchmark {
+public class PGBenchmarkRandom extends PGBenchmark
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGBenchmarkRandom pgBenchmarkRandom = new PGBenchmarkRandom();
 		pgBenchmarkRandom.benchmark();
 	}
 
 	@Override
-	public void benchmark() {
+	public void benchmark()
+	{
 		System.out.println("states,priorities,zr,pp,spm");
 
 		for (int i = 0; i < Random.STATES.length; i++) {
@@ -56,7 +59,7 @@ public class PGBenchmarkRandom extends PGBenchmark {
 						e.printStackTrace();
 						return;
 					}
-					
+
 					if (zrTime >= 0) {
 						zrAvgTime += zrTime;
 					} else if (zrAvgTime >= 0) {

@@ -29,7 +29,7 @@ public class TGSolution
 	}
 
 	/**
-	 * Set the winning region for the player (1-indexed).
+	 * Set the winning pair for the player (1-indexed).
 	 * @param player player (1-indexed)
 	 * @param pair Winning pair
 	 */

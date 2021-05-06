@@ -22,7 +22,9 @@ public class PG
 	 */
 	protected List<Integer> priorities;
 	/**
-	 * Map of priorities to states 
+	 * Map of priorities to states.
+	 * 
+	 * The priority list's index allowing for faster search of states with a given priority. 
 	 */
 	protected Map<Integer, BitSet> priorityMap = new HashMap<>();
 
@@ -58,11 +60,17 @@ public class PG
 	{
 	}
 
+	/**
+	 * Get the maximum priority in the parity game.
+	 */
 	public int maxPriority()
 	{
 		return Collections.max(priorities);
 	}
 
+	/**
+	 * Convert the parity game's definition from max-parity to min-parity.
+	 */
 	public void convertMaxToMin()
 	{
 		// Maximum priority
@@ -70,10 +78,12 @@ public class PG
 		// Even upper bound for the maximum priority d
 		int p = d + (d % 2);
 
+		// Reflect this change in the priorities list
 		for (int i = 0; i < priorities.size(); i++) {
 			priorities.set(i, p - priorities.get(i));
 		}
 
+		// Reflect this change in the priority map by creating a new map
 		Map<Integer, BitSet> oldPriorityMap = priorityMap;
 		priorityMap = new HashMap<>();
 		for (int oldPriority : oldPriorityMap.keySet()) {
@@ -81,6 +91,10 @@ public class PG
 		}
 	}
 
+	/**
+	 * Compute the subgame with the given states.
+	 * @param states states
+	 */
 	public PG subgame(BitSet states)
 	{
 		PG pg = new PG(this);
@@ -94,6 +108,10 @@ public class PG
 		return pg;
 	}
 
+	/**
+	 * Compute the subgame without the given states.
+	 * @param states states
+	 */
 	public PG difference(BitSet states)
 	{
 		PG pg = new PG(this);
@@ -116,31 +134,52 @@ public class PG
 		});
 	}
 
+	/** 
+	 * Get the turn-based game (TG).
+	 */
 	public TG getTG()
 	{
 		return tg;
 	}
 
+	/** 
+	 * Set the turn-based game (TG).
+	 * @param tg TG
+	 */
 	public void setTG(TG tg)
 	{
 		this.tg = (TGSimple) tg;
 	}
 
+	/** 
+	 * Get the list of priorities.
+	 */
 	public List<Integer> getPriorities()
 	{
 		return priorities;
 	}
 
+	/** 
+	 * Set the list of priorities.
+	 * @param priorities list of priorities
+	 */
 	public void setPriorities(List<Integer> priorities)
 	{
 		this.priorities = priorities;
 	}
 
+	/** 
+	 * Get the priority map.
+	 */
 	public Map<Integer, BitSet> getPriorityMap()
 	{
 		return priorityMap;
 	}
 
+	/** 
+	 * Set the priority map.
+	 * @param priorityMap priority map
+	 */
 	public void setPriorityMap(Map<Integer, BitSet> priorityMap)
 	{
 		this.priorityMap = priorityMap;

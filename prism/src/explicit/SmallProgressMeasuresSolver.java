@@ -33,7 +33,7 @@ public class SmallProgressMeasuresSolver extends PGSolver
 	@Override
 	public TGSolution solve(PG pg)
 	{
-		// Convert PG to the min definition as SPM assumes this
+		// Convert PG to the min-parity definition as SPM assumes this
 		PG parityGame = new PG(pg);
 		parityGame.convertMaxToMin();
 

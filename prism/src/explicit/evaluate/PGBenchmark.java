@@ -15,11 +15,13 @@ import explicit.SmallProgressMeasuresSolver;
 import explicit.ZielonkaRecursiveSolver;
 import prism.PrismComponent;
 
-public abstract class PGBenchmark {
+public abstract class PGBenchmark
+{
 
 	/** Location to the PGSolver bin folder. Change this. */
 	public static final String PGSOLVER_BIN = "";
 
+	/** Locations to various folders where parity games are generated/stored. */
 	public static final String PRISM_TESTS = "./prism/tests";
 	public static final String PRISM_PG = PRISM_TESTS + "/pg";
 	public static final String PRISM_BENCHMARK = PRISM_TESTS + "/benchmark";
@@ -38,30 +40,53 @@ public abstract class PGBenchmark {
 	public final PGSolver spm = new SmallProgressMeasuresSolver(prismComponent);
 
 	private ExecutorService executor;
+	/** The timeout when solving parity games, in minutes. */
 	public static final int TIMEOUT_MINS = 20;
 
-	public static class Random {
+	/** Random game parameters. */
+	public static class Random
+	{
 
 		public static final int[] STATES = { 1000, 5000, 10_000, 50_000, 100_000, 500_000, 1_000_000 };
 		public static final int[] PRIORITIES = { 2, 3, 5, 10, 50, 100, 500, 1000 };
 
 	}
 
-	public static class Clique {
+	/** Clique game parameters. */
+	public static class Clique
+	{
 
 		public static final int[] STATES = { 1000, 2000, 3000, 4000, 5000, 6000 };
 
 	}
 
-	public static class Lift {
+	/** Elevator system parameters. */
+	public static class Lift
+	{
 
 		public static final int[] N = { 2, 3, 4, 5, 6, 7, 8 };
 
 	}
 
+	/** Benchmark parity games. */
 	public abstract void benchmark();
 
-	public long time(PGSolver pgSolver, PG pg) throws InterruptedException, ExecutionException {
+	/**
+	 * Time the solution of a parity game using a given solver i.e. algorithm.
+	 * 
+	 * In special cases:
+	 * -1 is returned upon a timeout of TIMEOUT_MINS
+	 * -2 is returned upon running out of memory
+	 * -3 is returned upon an uncaught exception
+	 * 
+	 * @param pgSolver parity game algorithm
+	 * @param pg parity game
+	 * @return Time taken to solve in millis.
+	 * @throws InterruptedException
+	 * @throws ExecutionException
+	 */
+	public long time(PGSolver pgSolver, PG pg) throws InterruptedException, ExecutionException
+	{
 		if (executor == null) {
 			executor = Executors.newSingleThreadExecutor();
 		}
@@ -97,7 +122,12 @@ public abstract class PGBenchmark {
 		}
 	}
 
-	public static long roundUp(long num, long divisor) {
+	/** 
+	 * Round up when dividing two longs.
+	 * @return the result
+	 */
+	public static long roundUp(long num, long divisor)
+	{
 		return (num + divisor - 1) / divisor;
 	}
 

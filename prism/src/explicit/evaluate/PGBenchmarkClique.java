@@ -6,15 +6,18 @@ import java.util.concurrent.ExecutionException;
 
 import explicit.PG;
 
-public class PGBenchmarkClique extends PGBenchmark {
+public class PGBenchmarkClique extends PGBenchmark
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGBenchmarkClique pgBenchmarkClique = new PGBenchmarkClique();
 		pgBenchmarkClique.benchmark();
 	}
 
 	@Override
-	public void benchmark() {
+	public void benchmark()
+	{
 		System.out.println("states,edges,zr,pp,spm");
 
 		for (int i = 0; i < Clique.STATES.length; i++) {

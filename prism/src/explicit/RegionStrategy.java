@@ -16,7 +16,8 @@ public class RegionStrategy
 	protected BitSet region = new BitSet();
 	/**
 	 * The strategy.
-	 * TreeMap is used to print the strategy in the order of vertices.
+	 * 
+	 * TreeMap is used to print the strategy in linear order of the vertices.
 	 */
 	protected Map<Integer, Integer> strategy = new TreeMap<>();
 

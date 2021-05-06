@@ -9,15 +9,18 @@ import java.nio.file.StandardCopyOption;
 import explicit.Utils;
 import explicit.evaluate.PGBenchmark.Clique;
 
-public class PGGeneratorClique extends PGGenerator {
+public class PGGeneratorClique extends PGGenerator
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGGeneratorClique pgGeneratorClique = new PGGeneratorClique();
 		pgGeneratorClique.generate();
 	}
 
 	@Override
-	public void generate() {
+	public void generate()
+	{
 		File dir = new File(PGBenchmark.PRISM_BENCHMARK_CLIQUE);
 		Utils.purgeDirectory(dir);
 

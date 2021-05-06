@@ -4,6 +4,8 @@ import prism.PrismComponent;
 
 /**
  * Linear lifting strategy for the small progress measures algorithm.
+ * 
+ * This is a naive lifting strategy in which vertices are simply lifted in linear order.
  */
 public class LinearLiftingStrategy extends LiftingStrategy
 {

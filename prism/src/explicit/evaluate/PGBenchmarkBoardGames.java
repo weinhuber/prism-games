@@ -6,15 +6,18 @@ import java.util.concurrent.ExecutionException;
 
 import explicit.PG;
 
-public class PGBenchmarkBoardGames extends PGBenchmark {
+public class PGBenchmarkBoardGames extends PGBenchmark
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGBenchmarkBoardGames pgBenchmarkBoardGames = new PGBenchmarkBoardGames();
 		pgBenchmarkBoardGames.benchmark();
 	}
 
 	@Override
-	public void benchmark() {
+	public void benchmark()
+	{
 		System.out.println("game,states,zr,pp,spm");
 
 		File dir = new File(PRISM_BENCHMARK_BOARD_GAMES);

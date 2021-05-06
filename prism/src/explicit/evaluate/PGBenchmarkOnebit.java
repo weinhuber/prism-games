@@ -6,15 +6,18 @@ import java.util.concurrent.ExecutionException;
 
 import explicit.PG;
 
-public class PGBenchmarkOnebit extends PGBenchmark {
+public class PGBenchmarkOnebit extends PGBenchmark
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGBenchmarkOnebit pgBenchmarkOnebit = new PGBenchmarkOnebit();
 		pgBenchmarkOnebit.benchmark();
 	}
 
 	@Override
-	public void benchmark() {
+	public void benchmark()
+	{
 		System.out.println("property,states,zr,pp,spm");
 
 		File dir = new File(PRISM_BENCHMARK_ONEBIT);

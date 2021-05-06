@@ -58,6 +58,11 @@ public class TGSimple extends LTSSimple implements TG
 
 	/**
 	 * Active states
+	 * 
+	 * The nature of LTS and storing states in a list (i.e. densely) presents 
+	 * difficulties in removing states without shifting and relabelling each 
+	 * state to reflect a state's removal. Instead we store the states which 
+	 * are still active without modifying the original list of states.
 	 */
 	protected BitSet activeStates;
 

@@ -138,18 +138,19 @@ public class TGModelChecker extends NonProbModelChecker
 		// For LTL model checking routines
 		LTLModelChecker mcLtl = new LTLModelChecker(this);
 
-		// Build product of TG and automaton
+		// Build product of the TG and the automaton
 		AcceptanceType[] allowedAcceptance = { AcceptanceType.PARITY };
 		LTLModelChecker.LTLProduct<TG> product = mcLtl.constructProductTG(this, (TG) model, expr, statesOfInterest, allowedAcceptance);
 
-		// Get list of priorities for all states in product
+		// Get list of priorities for all states in the product game
 		AcceptanceParity accPar = (AcceptanceParity) product.getAcceptance();
 		List<Integer> priorities = accPar.getPriorities(product.getProductModel().getNumStates());
 		// Replace unknown priorities and convert all to max-even if needed
 		AcceptanceParity.replaceMissingPriorities(priorities, accPar.getObjective());
 		AcceptanceParity.convertPrioritiesToEven(priorities, accPar.getParity());
 		AcceptanceParity.convertPrioritiesToMax(priorities, accPar.getObjective());
-		mainLog.println(priorities);
+		// Log the list of priorities in the product game
+		mainLog.println("Priorities: " + priorities);
 
 		// Solve parity winning condition on product
 		TGModelChecker mcProduct = new TGModelChecker(this);

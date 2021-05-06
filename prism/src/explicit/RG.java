@@ -26,21 +26,35 @@ public class RG
 		this.target = target;
 	}
 
+	/** 
+	 * Get the turn-based game (TG). 
+	 */
 	public TG getTG()
 	{
 		return tg;
 	}
 
+	/** 
+	 * Set the turn-based game (TG).
+	 * @param tg TG
+	 */
 	public void setTG(TG tg)
 	{
 		this.tg = (TGSimple) tg;
 	}
 
+	/** 
+	 * Get the target set.
+	 */
 	public BitSet getTarget()
 	{
 		return target;
 	}
 
+	/** 
+	 * Set the target set. 
+	 * @param target target set
+	 */
 	public void setTarget(BitSet target)
 	{
 		this.target = target;

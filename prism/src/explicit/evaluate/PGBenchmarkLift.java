@@ -6,15 +6,18 @@ import java.util.concurrent.ExecutionException;
 
 import explicit.PG;
 
-public class PGBenchmarkLift extends PGBenchmark {
+public class PGBenchmarkLift extends PGBenchmark
+{
 
-	public static void main(String[] args) {
+	public static void main(String[] args)
+	{
 		PGBenchmarkLift pgBenchmarkLift = new PGBenchmarkLift();
 		pgBenchmarkLift.benchmark();
 	}
 
 	@Override
-	public void benchmark() {
+	public void benchmark()
+	{
 		System.out.println("n,states,zr,pp,spm");
 
 		for (int i = 0; i < Lift.N.length; i++) {
