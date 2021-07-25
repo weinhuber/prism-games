@@ -214,14 +214,14 @@ public class LTLModelChecker extends PrismComponent
 	 * (L0, L1, etc.) which become the atomic propositions in the resulting DA. BitSets giving the states which
 	 * satisfy each label are put into the vector {@code labelBS}, which should be empty when this function is called.
 	 *
-	 * @param mc a ProbModelChecker, used for checking maximal state formulas
+	 * @param mc a StateModelChecker, used for checking maximal state formulas
 	 * @param model the model
 	 * @param expr a path expression, i.e. the LTL formula
 	 * @param labelBS empty vector to be filled with BitSets for subformulas 
 	 * @param allowedAcceptance the allowed acceptance types
 	 * @return the DA
 	 */
-	public DA<BitSet,? extends AcceptanceOmega> constructDAForLTLFormula(ProbModelChecker mc, Model model, Expression expr, Vector<BitSet> labelBS, AcceptanceType... allowedAcceptance) throws PrismException
+	public DA<BitSet,? extends AcceptanceOmega> constructDAForLTLFormula(StateModelChecker mc, Model model, Expression expr, Vector<BitSet> labelBS, AcceptanceType... allowedAcceptance) throws PrismException
 	{
 		Expression ltl;
 		DA<BitSet,? extends AcceptanceOmega> da;
@@ -437,6 +437,23 @@ public class LTLModelChecker extends PrismComponent
 	}
 	
 	/**
+	 * Generate a deterministic automaton for the given LTL formula
+	 * and construct the product of this automaton with a TG.
+	 *
+	 * @param mc a TGModelChecker, used for checking maximal state formulas
+	 * @param model the model
+	 * @param expr a path expression
+	 * @param statesOfInterest the set of states for which values should be calculated (null = all states)
+	 * @param allowedAcceptance the allowed acceptance conditions
+	 * @return the product with the DA
+	 * @throws PrismException
+	 */
+	public LTLProduct<TG> constructProductTG(StateModelChecker mc, TG model, Expression expr, BitSet statesOfInterest, AcceptanceType... allowedAcceptance) throws PrismException
+	{
+		return constructDAProductForLTLFormula(mc, model, expr, statesOfInterest, allowedAcceptance);
+	}
+	
+	/**
 	 * Generate a deterministic automaton (DA) for the given LTL formula, having first extracted maximal state formulas
 	 * and model checked them with the passed in model and model checker (see {@link #constructDAForLTLFormula}.
 	 * Then construct the product of this automaton with the model.
@@ -449,7 +466,7 @@ public class LTLModelChecker extends PrismComponent
 	 * @return the product with the DA
 	 * @throws PrismException
 	 */
-	public <M extends Model> LTLProduct<M> constructDAProductForLTLFormula(ProbModelChecker mc, M model, Expression expr, BitSet statesOfInterest, AcceptanceType... allowedAcceptance) throws PrismException
+	public <M extends Model> LTLProduct<M> constructDAProductForLTLFormula(StateModelChecker mc, M model, Expression expr, BitSet statesOfInterest, AcceptanceType... allowedAcceptance) throws PrismException
 	{
 		// Convert LTL formula to automaton
 		Vector<BitSet> labelBS = new Vector<BitSet>();
@@ -597,6 +614,12 @@ public class LTLModelChecker extends PrismComponent
 			prodModel = smgProd;
 			break;
 		}
+		case TG: {
+			TGSimple tgProd = new TGSimple();
+			tgProd.setVarList(newVarList);
+			prodModel = tgProd;
+			break;
+		}
 		default:
 			throw new PrismNotSupportedException("Model construction not supported for " + modelType + "s");
 		}
@@ -611,6 +634,9 @@ public class LTLModelChecker extends PrismComponent
 			}
 			if (modelType == ModelType.CSG) {
 				((CSGSimple) prodModel).copyPlayerInfo((PlayerInfoOwner) model);
+			}
+			if (modelType == ModelType.TG) {
+				((TGSimple) prodModel).copyPlayerInfo((PlayerInfoOwner) model);
 			}
 		}
 		
@@ -663,6 +689,9 @@ public class LTLModelChecker extends PrismComponent
 			case SMG:
 				((SMGSimple) prodModel).addState(((SMG) model).getPlayer(s_0));
 				break;
+			case TG: 
+				((TGSimple) prodModel).addState(((TG) model).getPlayer(s_0));
+				break;
 			default:
 				prodModel.addState();
 			break;
@@ -703,6 +732,9 @@ public class LTLModelChecker extends PrismComponent
 				case SMG:
 					iter = ((SMG) model).getTransitionsIterator(s_1, j);
 					break;
+				case TG:
+					iter = ((TG) model).getTransitionsIterator(s_1, j);
+					break;
 				default:
 					throw new PrismNotSupportedException("Product construction not implemented for " + modelType + "s");
 				}
@@ -733,6 +765,9 @@ public class LTLModelChecker extends PrismComponent
 						case SMG:
 							((SMGSimple) prodModel).addState(((SMG) model).getPlayer(s_2));
 							break;
+						case TG:
+							((TGSimple) prodModel).addState(((TG) model).getPlayer(s_2));
+							break;
 						default:
 							prodModel.addState();
 							break;
@@ -751,6 +786,7 @@ public class LTLModelChecker extends PrismComponent
 					case MDP:
 					case STPG:
 					case SMG:
+					case TG:
 						prodDistr.set(map[s_2 * daSize + q_2], prob);
 						break;
 					default:
@@ -770,6 +806,9 @@ public class LTLModelChecker extends PrismComponent
 					break;
 				case SMG:
 					((SMGSimple) prodModel).addActionLabelledChoice(map[s_1 * daSize + q_1], prodDistr, ((SMG) model).getAction(s_1, j));
+					break;
+				case TG:
+					((TGSimple) prodModel).addActionLabelledTransition(map[s_1 * daSize + q_1], prodDistr.sampleFromDistribution(), ((TG) model).getAction(s_1, j));
 					break;
 				default:
 					break;
