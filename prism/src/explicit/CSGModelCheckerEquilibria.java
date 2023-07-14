@@ -1447,61 +1447,69 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 	 * @throws PrismException
 	 */
 	public ModelCheckerResult computeReachEquilibria(CSG<Double> csg, List<Coalition> coalitions, List<CSGRewards<Double>> rewards, BitSet[] targets, BitSet[] remain, int eqType, int crit, boolean min) throws PrismException {
-		ModelCheckerResult[] obj = new ModelCheckerResult[coalitions.size()];
-		ModelCheckerResult res = new ModelCheckerResult();
-		List<List<List<Map<BitSet, Double>>>> lstrat = null;
-		List<List<Map<BitSet, Double>>> sstrat = null;
-		List<Map<Integer, BitSet>> mmap = null;
-		BitSet[] only = new BitSet[targets.length];
+		// Initialization
+		ModelCheckerResult[] coalitionResults = new ModelCheckerResult[coalitions.size()];
+		ModelCheckerResult result = new ModelCheckerResult();
+		List<List<List<Map<BitSet, Double>>>> localStrategies = null;
+		List<List<Map<BitSet, Double>>> singleStrategies = null;
+		List<Map<Integer, BitSet>> mapping = null;
+		BitSet[] onlyTargets = new BitSet[targets.length];
 		BitSet[] phi1 = new BitSet[3];
 		BitSet known = new BitSet();
-		BitSet temp =  new BitSet();
-		double[][] sol = new double[coalitions.size()][csg.getNumStates()];
-		double[][] val = new double[coalitions.size()][csg.getNumStates()];
-		double[][] tmp = new double[coalitions.size()][csg.getNumStates()];
-		double[] eq;
-		double[] r = new double[csg.getNumStates()];
-		//double[] sw;
+		BitSet temp = new BitSet();
+		double[][] solution = new double[coalitions.size()][csg.getNumStates()];
+		double[][] values = new double[coalitions.size()][csg.getNumStates()];
+		double[][] temporary = new double[coalitions.size()][csg.getNumStates()];
+		double[] equilibrium;
+		double[] rewardsArray = new double[csg.getNumStates()];
 		int i, j, k, p, s;
-		boolean done, rew;
-		long timePrecomp;
-				
-		// player -> iteration -> state -> indexes -> value
+		boolean done, withRewards;
+		long precomputationTime;
+
+		// Check if generating strategies is enabled
 		if (genStrat) {
 			mdpmc.setGenStrat(true);
-			mmap = new ArrayList<Map<Integer, BitSet>>();
-			sstrat = new ArrayList<List<Map<BitSet, Double>>>();
-			lstrat = new ArrayList<List<List<Map<BitSet, Double>>>>();
+			mapping = new ArrayList<Map<Integer, BitSet>>();
+			singleStrategies = new ArrayList<List<Map<BitSet, Double>>>();
+			localStrategies = new ArrayList<List<List<Map<BitSet, Double>>>>();
 			for (i = 0; i < coalitions.size(); i++) {
-        		mmap.add(i, new HashMap<Integer, BitSet>());
-				lstrat.add(i, new ArrayList<List<Map<BitSet, Double>>>());
-				lstrat.get(i).add(0, new ArrayList<Map<BitSet, Double>>());
-				for (j = 0; j < csg.getNumStates(); j++) {	
-					lstrat.get(i).get(0).add(j, null);
+				mapping.add(i, new HashMap<Integer, BitSet>());
+				localStrategies.add(i, new ArrayList<List<Map<BitSet, Double>>>());
+				localStrategies.get(i).add(0, new ArrayList<Map<BitSet, Double>>());
+				for (j = 0; j < csg.getNumStates(); j++) {
+					localStrategies.get(i).get(0).add(j, null);
 				}
-			} 
+			}
 		}
-		rew = rewards != null;
+
+		// Check if rewards are provided
+		withRewards = rewards != null;
+
+		// Initialize onlyTargets and known BitSet arrays
 		for (i = 0; i < targets.length; i++) {
-			only[i] = new BitSet();
-			only[i].or(targets[i]);
+			onlyTargets[i] = new BitSet();
+			onlyTargets[i].or(targets[i]);
 			for (j = 0; j < targets.length; j++) {
-				if (i != j)
-					only[i].andNot(targets[j]);
+				if (i != j) {
+					onlyTargets[i].andNot(targets[j]);
+				}
 			}
 			known.or(targets[i]);
-		}		
-		if (!rew) {
+		}
+
+		// Precomputation for different objective types
+		if (!withRewards) {
 			for (i = 0; i < 2; i++) {
 				phi1[i] = new BitSet();
-				if (remain[i] == null) 
+				if (remain[i] == null) {
 					phi1[i].set(0, csg.getNumStates());
-				else
+				} else {
 					phi1[i].or(remain[i]);
+				}
 			}
 			phi1[2] = new BitSet();
-			phi1[2].or(phi1[0]); 
-			phi1[2].and(phi1[1]); // intersection of phi1(1) and phi1(2)
+			phi1[2].or(phi1[0]);
+			phi1[2].and(phi1[1]); // Intersection of phi1(1) and phi1(2)
 			temp.clear();
 			temp.or(phi1[0]);
 			phi1[0].andNot(phi1[1]); // phi1(1) minus phi1(2)
@@ -1512,197 +1520,190 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			temp.set(0, csg.getNumStates());
 			temp.andNot(phi1[2]);
 			known.or(temp);
-		}		
+		}
+
+		// Build coalitions
 		buildCoalitions(csg, coalitions);
 		dominated = new BitSet[numCoalitions];
 		dominating = new BitSet[numCoalitions];
 		mainLog.println();
 		findMaxRowsCols(csg);
-		
-		mainLog.println("Starting equilibria computation (solver=" + setSolver(eqType) + ")...");
-		mainLog.println("Checking whether all objctives are reachable...");
-		
+
+		mainLog.println("Starting equilibrium computation (solver=" + setSolver(eqType) + ")...");
+		mainLog.println("Checking whether all objectives are reachable...");
+
+		// Check assumption: All objectives are reachable from all states with probability 1
 		if (assumptionCheck) {
-   			for (i = 0; i < targets.length; i++) {
-   				temp.clear();
-   				if (!rew) {
-   					if (remain[i] != null) {
-   						temp.or(remain[i]);
-   						temp.flip(0, csg.getNumStates());
-   						temp.andNot(targets[i]);
-   					}
-   				}
-				temp.or(mdpmc.prob0((MDP) csg, null, targets[i], false, null));
-   				temp.or(targets[i]);
-   				if (mdpmc.prob1((MDP) csg, null, temp, true, null).cardinality() != csg.getNumStates())
-   					throw new PrismException("At least one of the objectives is not reachable with probability 1 from all states");
-   			}
-		}
-		
-		k = 0;
-		if (rew) {			
-			// Precompuation for rewards
-			timePrecomp = System.currentTimeMillis();
 			for (i = 0; i < targets.length; i++) {
-				obj[i] = mdpmc.computeReachRewards((MDP) csg, (MDPRewards) rewards.get(i), targets[i], min);
-				val[i] = obj[i].soln;
-			}
-			timePrecomp = System.currentTimeMillis() - timePrecomp;
-			for (s = 0; s < csg.getNumStates(); s++) {
-				if (targets[0].get(s) && targets[1].get(s)) {
-					sol[0][s] = 0.0;
-					sol[1][s] = 0.0;
+				temp.clear();
+				if (!withRewards) {
+					if (remain[i] != null) {
+						temp.or(remain[i]);
+						temp.flip(0, csg.getNumStates());
+						temp.andNot(targets[i]);
+					}
 				}
-				else if (only[0].get(s)) {
-					sol[0][s] = 0.0;
-					sol[1][s] = val[1][s];
-				}
-				else if (only[1].get(s)) {
-					sol[0][s] = val[0][s];
-					sol[1][s] = 0.0;
+				temp.or(mdpmc.prob0((MDP) csg, null, targets[i], false, null));
+				temp.or(targets[i]);
+				if (mdpmc.prob1((MDP) csg, null, temp, true, null).cardinality() != csg.getNumStates()) {
+					throw new PrismException("At least one of the objectives is not reachable with probability 1 from all states");
 				}
 			}
 		}
-		else {
-			// Precomputation for probabilistic
-			timePrecomp = System.currentTimeMillis();
-			for (i = 0; i < targets.length; i++) {		
-				if (remain[i] != null)
-					obj[i] = mdpmc.computeUntilProbs(csg, remain[i], targets[i], min);
-				else 
-					obj[i] = mdpmc.computeReachProbs((MDP) csg, targets[i], min);
-				val[i] = obj[i].soln;
+
+		k = 0;
+		if (withRewards) {
+			// Precomputation for rewards
+			precomputationTime = System.currentTimeMillis();
+			for (i = 0; i < targets.length; i++) {
+				coalitionResults[i] = mdpmc.computeReachRewards((MDP) csg, (MDPRewards) rewards.get(i), targets[i], min);
+				values[i] = coalitionResults[i].soln;
 			}
-			timePrecomp = System.currentTimeMillis() - timePrecomp;
+			precomputationTime = System.currentTimeMillis() - precomputationTime;
 			for (s = 0; s < csg.getNumStates(); s++) {
 				if (targets[0].get(s) && targets[1].get(s)) {
-					sol[0][s] = 1.0;
-					sol[1][s] = 1.0;
+					solution[0][s] = 0.0;
+					solution[1][s] = 0.0;
+				} else if (onlyTargets[0].get(s)) {
+					solution[0][s] = 0.0;
+					solution[1][s] = values[1][s];
+				} else if (onlyTargets[1].get(s)) {
+					solution[0][s] = values[0][s];
+					solution[1][s] = 0.0;
 				}
-				else if (only[0].get(s)) {
-					sol[0][s] = 1.0;
-					sol[1][s] = val[1][s];
+			}
+		} else {
+			// Precomputation for probabilistic objectives
+			precomputationTime = System.currentTimeMillis();
+			for (i = 0; i < targets.length; i++) {
+				if (remain[i] != null) {
+					coalitionResults[i] = mdpmc.computeUntilProbs(csg, remain[i], targets[i], min);
+				} else {
+					coalitionResults[i] = mdpmc.computeReachProbs((MDP) csg, targets[i], min);
 				}
-				else if (only[1].get(s)) {
-					sol[0][s] = val[0][s];
-					sol[1][s] = 1.0;
+				values[i] = coalitionResults[i].soln;
+			}
+			precomputationTime = System.currentTimeMillis() - precomputationTime;
+			for (s = 0; s < csg.getNumStates(); s++) {
+				if (targets[0].get(s) && targets[1].get(s)) {
+					solution[0][s] = 1.0;
+					solution[1][s] = 1.0;
+				} else if (onlyTargets[0].get(s)) {
+					solution[0][s] = 1.0;
+					solution[1][s] = values[1][s];
+				} else if (onlyTargets[1].get(s)) {
+					solution[0][s] = values[0][s];
+					solution[1][s] = 1.0;
+				} else if (phi1[0].get(s)) {
+					solution[0][s] = values[0][s];
+					solution[1][s] = 0.0;
+				} else if (phi1[1].get(s)) {
+					solution[0][s] = 0.0;
+					solution[1][s] = values[1][s];
+				} else if (!phi1[2].get(s)) {
+					solution[0][s] = 0.0;
+					solution[1][s] = 0.0;
 				}
-				else if (phi1[0].get(s)) {
-					sol[0][s] = val[0][s];
-					sol[1][s] = 0.0;
-				}
-				else if (phi1[1].get(s)) {
-					sol[0][s] = 0.0;
-					sol[1][s] = val[1][s];
-				}
-				else if (!phi1[2].get(s)) {
-					sol[0][s] = 0.0;
-					sol[1][s] = 0.0;
-				}
-			}	
+			}
 		}
+
 		mainLog.println();
 		done = true;
 		dominated = new BitSet[numCoalitions];
 		dominating = new BitSet[numCoalitions];
+
 		while (true) {
 			for (s = 0; s < csg.getNumStates(); s++) {
 				if (!known.get(s)) {
 					if (genStrat) {
-						sstrat = new ArrayList<List<Map<BitSet, Double>>>();
-						mmap.clear();
-			    		for (p = 0; p < 2; p++) {
-			        		mmap.add(p, new HashMap<Integer, BitSet>());
-			        	}
+						singleStrategies = new ArrayList<List<Map<BitSet, Double>>>();
+						mapping.clear();
+						for (p = 0; p < 2; p++) {
+							mapping.add(p, new HashMap<Integer, BitSet>());
+						}
 					}
-					eq = stepEquilibriaTwoPlayer(csg, rewards, mmap, sstrat, sol, s, eqType, crit, rew, min);
-					val[0][s] = eq[1];
-					val[1][s] = eq[2];
-					// player -> iteration -> state -> indexes -> value
+					equilibrium = stepEquilibriaTwoPlayer(csg, rewards, mapping, singleStrategies, solution, s, eqType, crit, withRewards, min);
+					values[0][s] = equilibrium[1];
+					values[1][s] = equilibrium[2];
+
+					// Store generated strategies based on the equilibrium type
 					if (genStrat) {
 						switch (eqType) {
 							case CORR: {
-								if (lstrat.get(0).get(0).get(s) == null) {
-									lstrat.get(0).get(0).set(s, sstrat.get(0).get(0));
-								}
-								else if (!lstrat.get(0).get(0).get(s).equals(sstrat.get(0).get(0)) && checkEquilibriumChange(sol, eq, s)) {
-									lstrat.get(0).get(0).set(s, sstrat.get(0).get(0));
+								if (localStrategies.get(0).get(0).get(s) == null) {
+									localStrategies.get(0).get(0).set(s, singleStrategies.get(0).get(0));
+								} else if (!localStrategies.get(0).get(0).get(s).equals(singleStrategies.get(0).get(0)) && checkEquilibriumChange(solution, equilibrium, s)) {
+									localStrategies.get(0).get(0).set(s, singleStrategies.get(0).get(0));
 								}
 								break;
 							}
 							default: {
 								for (p = 0; p < coalitions.size(); p++) {
-									if (lstrat.get(p).get(0).get(s) == null) {
-										lstrat.get(p).get(0).set(s, sstrat.get(0).get(p));
-									}
-									else if (!lstrat.get(0).get(0).get(s).equals(sstrat.get(0).get(p)) && checkEquilibriumChange(sol, eq, s)) {
-										lstrat.get(p).get(0).set(s, sstrat.get(0).get(p));
+									if (localStrategies.get(p).get(0).get(s) == null) {
+										localStrategies.get(p).get(0).set(s, singleStrategies.get(0).get(p));
+									} else if (!localStrategies.get(0).get(0).get(s).equals(singleStrategies.get(0).get(p)) && checkEquilibriumChange(solution, equilibrium, s)) {
+										localStrategies.get(p).get(0).set(s, singleStrategies.get(0).get(p));
 									}
 								}
 							}
 						}
 					}
 				}
-				// loop over states
 			}
+
 			for (s = 0; s < csg.getNumStates(); s++) {
 				if (!known.get(s)) {
-					sol[0][s] = val[0][s];
-					sol[1][s] = val[1][s];
+					solution[0][s] = values[0][s];
+					solution[1][s] = values[1][s];
 				}
-				r[s] = sol[0][s] + sol[1][s];
+				rewardsArray[s] = solution[0][s] + solution[1][s];
 			}
-			/*
-			String sols;
-			sols = "(";
-			for (p = 0; p < numCoalitions; p++) {
-				if (p < numCoalitions - 1)
-					sols += sol[p][csg.getFirstInitialState()] + ",";
-				else
-					sols += sol[p][csg.getFirstInitialState()] + ")";
-			}
-			mainLog.println(k + ": " + sols);
-			*/
-			done = done & PrismUtils.doublesAreClose(sol[0], tmp[0], termCritParam, termCrit == TermCrit.ABSOLUTE);
-			done = done & PrismUtils.doublesAreClose(sol[1], tmp[1], termCritParam, termCrit == TermCrit.ABSOLUTE);
+
+			done = PrismUtils.doublesAreClose(solution[0], temporary[0], termCritParam, termCrit == TermCrit.ABSOLUTE);
+			done = done & PrismUtils.doublesAreClose(solution[1], temporary[1], termCritParam, termCrit == TermCrit.ABSOLUTE);
+
 			if (done) {
 				break;
 			}
 			else if (!done && k == maxIters) {
 				throw new PrismException("Could not converge after " + k + " iterations");
-			}
-			else {
+			} else {
 				done = true;
-				tmp[0] = Arrays.copyOf(sol[0], sol[0].length);
-				tmp[1] = Arrays.copyOf(sol[1], sol[1].length);
+				temporary[0] = Arrays.copyOf(solution[0], solution[0].length);
+				temporary[1] = Arrays.copyOf(solution[1], solution[1].length);
 			}
+
 			k++;
 		}
+
 		mainLog.println("\nValue iteration converged after " + k + " iterations.");
-		mainLog.println("\nPrecomputation took " + timePrecomp / 1000.0 + " seconds.");
-		mainLog.println("Coalition results (initial state): (" + sol[0][csg.getFirstInitialState()] + "," + sol[1][csg.getFirstInitialState()] + ")");
-		res.soln = r;
-		if (genStrat) 	{
+		mainLog.println("\nPrecomputation took " + precomputationTime / 1000.0 + " seconds.");
+		mainLog.println("Coalition results (initial state): (" + solution[0][csg.getFirstInitialState()] + "," + solution[1][csg.getFirstInitialState()] + ")");
+
+		result.soln = rewardsArray;
+
+		// Generate strategy data structures based on the equilibrium type and reward availability
+		if (genStrat)  {
 			switch (eqType) {
 				case CORR: {
-					if (rew)
-						res.strat = new CSGStrategy(csg, lstrat, obj, targets, CSGStrategyType.EQUILIBRIA_CE_R);
+					if (withRewards)
+						result.strat = new CSGStrategy(csg, localStrategies, coalitionResults, targets, CSGStrategyType.EQUILIBRIA_CE_R);
 					else
-						res.strat = new CSGStrategy(csg, lstrat, obj, targets, CSGStrategyType.EQUILIBRIA_CE_P);
+						result.strat = new CSGStrategy(csg, localStrategies, coalitionResults, targets, CSGStrategyType.EQUILIBRIA_CE_P);
 					break;
 				}
 				default: {
-					if (rew)
-						res.strat = new CSGStrategy(csg, lstrat, obj, targets, CSGStrategyType.EQUILIBRIA_R);
+					if (withRewards)
+						result.strat = new CSGStrategy(csg, localStrategies, coalitionResults, targets, CSGStrategyType.EQUILIBRIA_R);
 					else
-						res.strat = new CSGStrategy(csg, lstrat, obj, targets, CSGStrategyType.EQUILIBRIA_P);
+						result.strat = new CSGStrategy(csg, localStrategies, coalitionResults, targets, CSGStrategyType.EQUILIBRIA_P);
 				}
 			}
 		}
-		res.numIters = k;
-		return res;		
+		result.numIters = k;
+		return result;
 	}
-	
+
 	/**
 	 * Selects the equilibrium that minimises the difference among the highest and lowest payoffs.
 	 * 
