@@ -1696,7 +1696,86 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			}
 		}
 		result.numIters = k;
+
+//		injectStaticNoise(localStrategies, csg, List.of(0.0), eqType, true);
+//		injectStaticNoise(localStrategies, csg, List.of(0.1), eqType, true);
+//		injectStaticNoise(localStrategies, csg, List.of(1.0), eqType, true);
+
 		return result;
+
+	}
+
+	// function to inject static noise
+	public void injectStaticNoise(List<List<List<Map<BitSet, Double>>>> localStrategies, CSG<Double> csg, List<Double> noise, int eqType, boolean support) throws PrismException {
+		System.out.println("injecting static noise into local strategy");
+
+		if (eqType != 2) {
+			System.out.println("injecting static noise currently only supports CE");
+			return;
+		}
+
+		// iterating over all noises to inject
+		for (int i = 0; i < noise.size(); i++) {
+
+			// if eyType CORRELATED_EQUILIBRIUM --> mixed strategy over joint actions is stored in player 0
+			List<List<Map<BitSet, Double>>> player = localStrategies.get(0);
+
+			// currently all iterations are stored in 0; However to make it bulletproof, we're accessing the "last" iteration
+			List<Map<BitSet, Double>> iteration = player.get(player.size() - 1);
+
+			// keep in mind that this state it the state number before the re-enumaration
+			Map<BitSet, Double> state = iteration.get(i);
+
+			// get the static noise factor for state i
+			Double staticNoise = noise.get(i);
+
+			// get available support actions
+			List<BitSet> availableSupportActions = getStateJointActions(csg, i);
+
+			if (availableSupportActions.get(0).isEmpty()) {
+				System.out.println("Noise injection impossible since no actions are available at given state " + i);
+				return;
+			}
+
+			double baseDistort = staticNoise / availableSupportActions.size();
+
+			Map<BitSet, Double> availableJointActions = new HashMap<>();
+
+			for (BitSet jointAction : availableSupportActions) {
+				availableJointActions.put(jointAction, baseDistort);
+			}
+
+
+			// iterate through all joint actions
+			for (Map.Entry<BitSet, Double> entry : state.entrySet()) {
+				BitSet jointAction = entry.getKey();
+				Double prop = entry.getValue();
+
+				Double updatedValue = ((1.0 - staticNoise) * prop) + baseDistort;
+				availableJointActions.put(jointAction, updatedValue);
+
+				System.out.println("joint action: " + jointAction + " " + prop);
+				System.out.println("\tdistorted prop: " + updatedValue);
+			}
+
+			System.out.println("distorted joint actions: " + availableJointActions);
+
+			// sanity check
+			double sum = 0.0;
+			for (Double value : availableJointActions.values()) {
+				sum += value;
+			}
+			double epsilon = 0.000000000001;
+			if (sum > (1.0 + epsilon) || sum < (1.0 - epsilon)) {
+				System.out.println("The sum of the values is: " + sum);
+				throw new PrismException("The sum of the values is not 1.0 +- epsilon");
+			} else {
+				System.out.println("Sanity passed with sum: " + sum);
+			}
+
+			// update the local strategy with the new distorted joint actions
+			iteration.set(i, availableJointActions);
+		}
 	}
 
 	// helper function for getStateJointActions
