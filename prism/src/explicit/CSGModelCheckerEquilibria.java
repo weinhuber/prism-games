@@ -1710,10 +1710,10 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 //		System.out.println("noise map: " + map);
 //		// this map corresponds to the first state
 //		noise.add(map);
-//		injectTargetNoise(localStrategies, csg, noise, eqType);
+//		injectTargetNoise(localStrategies, csg, noise, eqType, true);
 
 //		injectStaticNoise(localStrategies, csg, List.of(0.0), eqType, true);
-		injectStaticNoise(localStrategies, csg, List.of(0.1), eqType, true);
+//		injectStaticNoise(localStrategies, csg, List.of(0.1), eqType, true);
 //		injectStaticNoise(localStrategies, csg, List.of(1.0), eqType, true);
 
 		return result;
@@ -1723,7 +1723,7 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 	// function to inject state noise into a joint action
 	// noise is a list of joint actions pairs and their respective noise
 	// position of this map in the list corresponds to the state
-	public void injectTargetNoise(List<List<List<Map<BitSet, Double>>>> localStrategies, CSG<Double> csg, List<Map<BitSet, Double>> noise, int eqType) throws PrismException {
+	public void injectTargetNoise(List<List<List<Map<BitSet, Double>>>> localStrategies, CSG<Double> csg, List<Map<BitSet, Double>> noise, int eqType, boolean support) throws PrismException {
 		System.out.println("injecting targeted noise into local strategy");
 
 		// handling the case of correlated equilibrium because the mixed strategy is stored in player 0
@@ -1745,9 +1745,18 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			Map<BitSet, Double> state = iteration.get(i);
 
 			// get available support actions
-			List<BitSet> availableSupportActions = getStateJointActions(csg, i);
+			List<BitSet> availableActions = new ArrayList<>();
 
-			if (availableSupportActions.get(0).isEmpty()) {
+			// if support is true, we do not introduce new joint actions which haven't been there
+			if (support) {
+				for (Map.Entry<BitSet, Double> entry : localStrategies.get(0).get(0).get(i).entrySet()) {
+					availableActions.add(entry.getKey());
+				}
+			} else {
+				availableActions = getStateJointActions(csg, i);
+			}
+
+			if (availableActions.get(0).isEmpty()) {
 				System.out.println("Noise injection impossible since no actions are available at given state " + i);
 				return;
 			}
@@ -1761,11 +1770,11 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 				Double targetProp = actionMap.getValue();
 				targetDistributionSum += targetProp;
 				availableJointActions.put(targetJointAction, targetProp);
-				availableSupportActions.remove(targetJointAction);
+				availableActions.remove(targetJointAction);
 			}
 
 			// get number of joint actions that have not been assigned a target probability
-			int remainingJointActions = availableSupportActions.size();
+			int remainingJointActions = availableActions.size();
 
 			// distribute the remaining probability mass evenly among the remaining joint actions
 			double remainingProbabilityMass = 1.0 - targetDistributionSum;
@@ -1776,7 +1785,7 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			} else if (remainingProbabilityMass > 0.0) {
 				// iterate through remaining joint actions and distribute the remaining prop mass evenly
 				Double baseDistort = remainingProbabilityMass / remainingJointActions;
-				for (BitSet entry : availableSupportActions) {
+				for (BitSet entry : availableActions) {
 					availableJointActions.put(entry, baseDistort);
 
 				}
