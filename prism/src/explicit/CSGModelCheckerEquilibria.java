@@ -1699,6 +1699,41 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 		return result;
 	}
 
+	// helper function for getStateJointActions
+	private List<BitSet> generateCombinations(List<BitSet> input) {
+		List<BitSet> result = new ArrayList<>();
+		generateCombinations(input, 0, new BitSet(), result);
+		return result;
+	}
+
+	// helper function for getStateJointActions
+	private void generateCombinations(List<BitSet> input, int index, BitSet current, List<BitSet> result) {
+		if (index == input.size()) {
+			result.add((BitSet) current.clone());
+			return;
+		}
+
+		BitSet bitSet = input.get(index);
+		for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1)) {
+			current.set(i);
+			generateCombinations(input, index + 1, current, result);
+			current.clear(i);
+		}
+	}
+
+	// function which returns all possible (and enabled) joint actions for a given state
+	public List<BitSet> getStateJointActions(CSG<Double> csg, int state) {
+		List<BitSet> jointActions = new ArrayList<>();
+
+		BitSet concurrentPlayers = csg.getConcurrentPlayers(state);
+
+		for (int player = concurrentPlayers.nextSetBit(0); player >= 0; player = concurrentPlayers.nextSetBit(player+1)) {
+			jointActions.add(csg.getIndexesForPlayer(state,player));
+		}
+
+		return generateCombinations(jointActions);
+	}
+
 	// helper function to print mixed strategy over joint actions per state
 	public void printLocalStrategiesState(List<List<List<Map<BitSet, Double>>>> localStrategies, CSG<Double> csg) {
 		for (int state = 0; state < localStrategies.get(0).get(0).size(); state++) {
