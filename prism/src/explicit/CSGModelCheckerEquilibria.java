@@ -1697,6 +1697,21 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 		}
 		result.numIters = k;
 
+//		// creating targeted action noise per state
+//		List<Map<BitSet, Double>> noise = new ArrayList<>();
+//
+//		// introducing noise to first joint action pair in the first state
+//		Map<BitSet, Double> map = new HashMap<>();
+//		// specifying that the first two joint action pairs should be chosen with probability 0.4
+//		// remaining probability mass is distributed uniformly among the remaining joint action pairs equally
+//		Iterator<BitSet> iterator = localStrategies.get(0).get(0).get(0).keySet().iterator();
+//		map.put(iterator.next(), 0.4);
+//		map.put(iterator.next(), 0.19);
+//		System.out.println("noise map: " + map);
+//		// this map corresponds to the first state
+//		noise.add(map);
+//		injectTargetNoise(localStrategies, csg, noise, eqType);
+
 //		injectStaticNoise(localStrategies, csg, List.of(0.0), eqType, true);
 //		injectStaticNoise(localStrategies, csg, List.of(0.1), eqType, true);
 //		injectStaticNoise(localStrategies, csg, List.of(1.0), eqType, true);
@@ -1704,6 +1719,93 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 		return result;
 
 	}
+
+	// function to inject state noise into a joint action
+	// noise is a list of joint actions pairs and their respective noise
+	// position of this map in the list corresponds to the state
+	public void injectTargetNoise(List<List<List<Map<BitSet, Double>>>> localStrategies, CSG<Double> csg, List<Map<BitSet, Double>> noise, int eqType) throws PrismException {
+		System.out.println("injecting targeted noise into local strategy");
+
+		// handling the case of correlated equilibrium because the mixed strategy is stored in player 0
+		if (eqType != 2) {
+			System.out.println("injecting static noise currently only supports CE");
+			return;
+		}
+
+		// iterating over all noises to inject
+		for (int i = 0; i < noise.size(); i++) {
+
+			// if eyType CORRELATED_EQUILIBRIUM --> mixed strategy over joint actions is stored in player 0
+			List<List<Map<BitSet, Double>>> player = localStrategies.get(0);
+
+			// currently all iterations are stored in 0; However to make it bulletproof, we're accessing the "last" iteration
+			List<Map<BitSet, Double>> iteration = player.get(player.size() - 1);
+
+			// keep in mind that this state it the state number before the re-enumaration
+			Map<BitSet, Double> state = iteration.get(i);
+
+			// get available support actions
+			List<BitSet> availableSupportActions = getStateJointActions(csg, i);
+
+			if (availableSupportActions.get(0).isEmpty()) {
+				System.out.println("Noise injection impossible since no actions are available at given state " + i);
+				return;
+			}
+
+			Map<BitSet, Double> availableJointActions = new HashMap<>();
+
+			double targetDistributionSum = 0.0;
+			// iterate through all target noise values and update the placeholder values
+			for (Map.Entry<BitSet, Double> actionMap : noise.get(i).entrySet()) {
+				BitSet targetJointAction = actionMap.getKey();
+				Double targetProp = actionMap.getValue();
+				targetDistributionSum += targetProp;
+				availableJointActions.put(targetJointAction, targetProp);
+				availableSupportActions.remove(targetJointAction);
+			}
+
+			// get number of joint actions that have not been assigned a target probability
+			int remainingJointActions = availableSupportActions.size();
+
+			// distribute the remaining probability mass evenly among the remaining joint actions
+			double remainingProbabilityMass = 1.0 - targetDistributionSum;
+
+			if (remainingProbabilityMass < 0.0) {
+				System.out.println("The sum of the target distribution is greater than 1.0");
+				return;
+			} else if (remainingProbabilityMass > 0.0) {
+				// iterate through remaining joint actions and distribute the remaining prop mass evenly
+				Double baseDistort = remainingProbabilityMass / remainingJointActions;
+				for (BitSet entry : availableSupportActions) {
+					availableJointActions.put(entry, baseDistort);
+
+				}
+			}
+
+			// sanity check
+			if (targetDistributionSum > 1.0) {
+				throw new PrismException("The sum of the target distribution is greater than 1.0");
+			}
+
+			double sum = 0.0;
+			for (Double value : availableJointActions.values()) {
+				sum += value;
+			}
+			double epsilon = 0.000000000001;
+			if (sum > (1.0 + epsilon) || sum < (1.0 - epsilon)) {
+				System.out.println("The sum of the values is: " + sum);
+				throw new PrismException("The sum of the values is not 1.0 +- epsilon");
+			} else {
+				System.out.println("Sanity passed with sum: " + sum);
+			}
+
+			System.out.println("distorted joint actions: " + availableJointActions);
+
+			// update the local strategy with the new distorted joint actions
+			iteration.set(i, availableJointActions);
+		}
+	}
+
 
 	// function to inject static noise
 	public void injectStaticNoise(List<List<List<Map<BitSet, Double>>>> localStrategies, CSG<Double> csg, List<Double> noise, int eqType, boolean support) throws PrismException {
