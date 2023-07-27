@@ -1713,7 +1713,7 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 //		injectTargetNoise(localStrategies, csg, noise, eqType);
 
 //		injectStaticNoise(localStrategies, csg, List.of(0.0), eqType, true);
-//		injectStaticNoise(localStrategies, csg, List.of(0.1), eqType, true);
+		injectStaticNoise(localStrategies, csg, List.of(0.1), eqType, true);
 //		injectStaticNoise(localStrategies, csg, List.of(1.0), eqType, true);
 
 		return result;
@@ -1832,20 +1832,33 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			Double staticNoise = noise.get(i);
 
 			// get available support actions
-			List<BitSet> availableSupportActions = getStateJointActions(csg, i);
+			List<BitSet> availableActions = new ArrayList<>();
 
-			if (availableSupportActions.get(0).isEmpty()) {
+			// if support is true, we do not introduce new joint actions which haven't been there
+			if (support) {
+				for (Map.Entry<BitSet, Double> entry : localStrategies.get(0).get(0).get(i).entrySet()) {
+					availableActions.add(entry.getKey());
+				}
+			} else {
+				availableActions = getStateJointActions(csg, i);
+			}
+
+			if (availableActions.get(0).isEmpty()) {
 				System.out.println("Noise injection impossible since no actions are available at given state " + i);
 				return;
 			}
 
-			double baseDistort = staticNoise / availableSupportActions.size();
+			double baseDistort = staticNoise / availableActions.size();
 
 			Map<BitSet, Double> availableJointActions = new HashMap<>();
 
-			for (BitSet jointAction : availableSupportActions) {
-				availableJointActions.put(jointAction, baseDistort);
+			// if support is false, we assign
+			if (!support) {
+				for (BitSet jointAction : availableActions) {
+					availableJointActions.put(jointAction, baseDistort);
+				}
 			}
+
 
 
 			// iterate through all joint actions
