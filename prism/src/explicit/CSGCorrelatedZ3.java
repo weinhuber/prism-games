@@ -314,7 +314,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 							if (actionIndex != r) {
 								s.Add(ctx.mkGe(expr, zero));
 								System.out.println("\t\t------------------------------------------------------------------------------------------------");
-								System.out.println(s);
+								System.out.println(expr);
 								counter++;
 //									System.out.println("counter: " + counter);
 								System.out.println(epsilonCeVarMap.toString());
@@ -354,7 +354,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 			result.setPayoffVector(payoffs_result);
 			strategy_result.add(d);
 			result.setStrategy(strategy_result);
-
+			System.out.println("Solution found!");
 			System.out.println(epsilonCeVarMap);
 			System.out.println(payoffs_result);
 			System.out.println(d);
