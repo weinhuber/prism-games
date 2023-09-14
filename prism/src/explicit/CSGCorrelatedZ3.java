@@ -32,19 +32,9 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.microsoft.z3.AlgebraicNum;
-import com.microsoft.z3.ArithExpr;
-import com.microsoft.z3.BoolExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.IntExpr;
-import com.microsoft.z3.Model;
-import com.microsoft.z3.Optimize;
-import com.microsoft.z3.RatNum;
-import com.microsoft.z3.RealExpr;
-import com.microsoft.z3.Status;
-import com.microsoft.z3.Version;
+import com.microsoft.z3.*;
 
+import com.microsoft.z3.Model;
 import prism.Pair;
 
 /**
@@ -95,7 +85,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
         name = Version.getFullVersion();
         zero = ctx.mkInt(0);
         one = ctx.mkInt(1);
-        vars = new RealExpr[n_entries * n_entries * n_entries];
+        vars = new RealExpr[n_entries * n_entries * n_entries + 1];
         payoffs = new ArithExpr[n_coalitions];
         this.n_coalitions = n_coalitions;
 
@@ -158,9 +148,6 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
         ArrayList<Distribution> strategy_result = new ArrayList<>();
         int counter = 0;
         ArithExpr expr;
-        BitSet ciAction, eiAction;
-        ciAction = new BitSet();
-        eiAction = new BitSet();
         solver.Push();
 
 
@@ -206,18 +193,21 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                     // c_{-i} ∈ C_{-i}
                     for (BitSet opponentAction : ce_constraints.get(currentPlayerIndex).get(actionIndex).keySet()) {
                         System.out.println("\t\t\tc_{-" + currentPlayerIndex + "} ∈ C_{-" + currentPlayerIndex + "}: " + opponentAction);
-                        ciAction.clear();
+
+                        BitSet ciAction = new BitSet();
                         ciAction.set(strategies.get(currentPlayerIndex).get(actionIndex));
 
-                        eiAction.clear();
+                        BitSet eiAction = new BitSet();
                         eiAction.set(strategies.get(currentPlayerIndex).get(deviationIndex));
 
                         ciAction.or(opponentAction);
                         eiAction.or(opponentAction);
 
-
                         BitSet ciActionClone = new BitSet();
                         ciActionClone.or(ciAction);
+
+                        BitSet eiActionClone = new BitSet();
+                        eiActionClone.or(eiAction);
 
                         // S ⊆ N_{-i}
                         for (ArrayList<Integer> tremblePlayerSubset : tremblePlayerSubsets) {
@@ -249,35 +239,29 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 
                                 // computing bitset (c_{-S}, e_S)
                                 // step 1: removing all possible actions of players in S
-                                ciAction.andNot(getPlayersAvailableSet(strategies, tremblePlayerSubset));
+                                ciAction.andNot(tremblePlayersAvailableSet);
                                 // step 2: injecting vector e_S
                                 ciAction.or(eS);
 
-
-                                // S ∪ {i}
-//                                ArrayList<Integer> extendedSubsetS = new ArrayList<>(tremblePlayerSubset);
-//                                extendedSubsetS.add(currentPlayerIndex);
-
                                 // computing bitset (c_{-S ∪ {i}}, e_S ∪ {i})
                                 // step 1: removing all possible actions of players in S ∪ {i}
-                                eiAction.andNot(getPlayersAvailableSet(strategies, tremblePlayerSubset));
+                                eiAction.andNot(tremblePlayersAvailableSet);
                                 // step 2: inject eS with S = S
                                 eiAction.or(eS);
 
                                 System.out.println("\t\t\t\t\t\t\tη(c,e_S): \t\t\t\t\tη("+ ciActionClone + "," + eS + ")");
                                 System.out.println("\t\t\t\t\t\t\t(c_{-S}, e_S): \t\t\t\t" + ciAction);
                                 System.out.println("\t\t\t\t\t\t\t(c_{-S ∪ {i}}, e_S ∪ {i}): \t" + eiAction);
+                                System.out.println(ciAction + " " + utilities.get(ciAction).get(currentPlayerIndex));
+                                System.out.println(eiAction + " " + utilities.get(eiAction).get(currentPlayerIndex));
+
                                 expr = ctx.mkAdd(expr, ctx.mkMul(vars[epsilonCeVarMap.get(new Pair<>(ciActionClone, eS))],
                                         ctx.mkSub(ctx.mkReal(String.valueOf(utilities.get(ciAction).get(currentPlayerIndex))),
                                                 ctx.mkReal(String.valueOf(utilities.get(eiAction).get(currentPlayerIndex))))));
                                 System.out.println("------------------------------------------------------");
                                 System.out.println(expr);
                                 System.out.println("------------------------------------------------------");
-
-//                                System.out.println("\t\t\t\t\t" + epsilonCeVarMap);
-//                                System.out.println("\t\t\t\t\tSupexpr:");
-//                                System.out.println(expr);
-
+                                System.out.println(epsilonCeVarMap);
                             }
                         }
                     }
@@ -285,224 +269,81 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                     System.out.println(expr);
                     System.out.println("------------------------------------------------------");
                     solver.Add(ctx.mkGe(expr, zero));
-//                    // inject trembling
-//                    // compute set of available actions for all trembling players
-//                    for (ArrayList<Integer> tremblePlayerSubset : tremblePlayerSubsets) {
-//                        ArrayList<ArrayList<Integer>> trembleActions = getTrembleActions(tremblePlayerSubset, strategies);
-//
-//                        // subset of trembling players + current player
-//                        ArrayList<Integer> tremblePlayerSubsetWithCurrentPlayer = new ArrayList<>(tremblePlayerSubset);
-//                        tremblePlayerSubsetWithCurrentPlayer.add(currentPlayerIndex);
-//
-//                        // possible trembling actions for tremble players + current player
-//                        ArrayList<ArrayList<Integer>> trembleActionsWithCurrentPlayer = getTrembleActions(tremblePlayerSubsetWithCurrentPlayer, strategies);
-//
-//                        // todo: think about whether this is correct
-////                        if (tremblePlayerSubset.isEmpty()) {
-////                            System.out.println("\t\t--------------------------------");
-////                            System.out.println("\t\t\t\tNo trembling...");
-////                            System.out.println("\t\t--------------------------------");
-////                            continue;
-////                        }
-//                        BitSet tremblePlayersAvailableSet = new BitSet();
-//                        for (int tremblePlayerIndex : tremblePlayerSubset) {
-//                            // get all possible actions of this player
-//                            ArrayList<Integer> tremblePlayersAvailableActions = strategies.get(tremblePlayerIndex);
-//
-//
-//                            for (Integer index : tremblePlayersAvailableActions) {
-//                                tremblePlayersAvailableSet.set(index);
-//                            }
-//                        }
-//
-//
-//                        // injecting trembling
-//                        for (ArrayList<Integer> trembleAction : trembleActions) {
-//
-//                            BitSet trembleActionSet = new BitSet();
-//                            for (Integer index : trembleAction) {
-//                                trembleActionSet.set(index);
-//                            }
-//
-//                            if (actionIndex != deviationIndex) {
-//                                System.out.println("\t\tSubset of player trembling: " + tremblePlayerSubset.toString());
-//                                System.out.println("\t\tinjecting trembling action: " + trembleAction.toString());
-//                            }
-//
-//
-//                            // for each possible action of other players
-//                            for (BitSet opponentAction : ce_constraints.get(currentPlayerIndex).get(actionIndex).keySet()) {
-//
-//                                // bitset "is" is now containing
-//                                ciAction.or(opponentAction);
-//                                eiAction.or(opponentAction);
-//
-//                                if (actionIndex != deviationIndex) {
-//                                    eiAction.set(strategies.get(currentPlayerIndex).get(deviationIndex));
-//                                    System.out.println("\t\tJoint Action Pairs for regular CE:");
-//                                    System.out.println("\t\t\t\tis: " + ciAction);
-//                                    System.out.println("\t\t\t\tjs: " + eiAction);
-//
-//                                    // safety copy
-//                                    BitSet originalIs = (BitSet) ciAction.clone();
-//                                    BitSet originalJs = (BitSet) eiAction.clone();
-//
-//                                    // removing potential actions of trembling players
-//                                    ciAction.andNot(tremblePlayersAvailableSet);
-//                                    eiAction.andNot(tremblePlayersAvailableSet);
-//                                    ciAction.or(trembleActionSet);
-//                                    eiAction.or(trembleActionSet);
-//
-//                                    System.out.println("\t\tAfter injecting trembling:" + trembleAction);
-//                                    System.out.println("\t\t\t\tis: " + ciAction);
-//                                    System.out.println("\t\t\t\tjs: " + eiAction);
-//
-//                                    // check if joint action and trembling action already exist in map
-//                                    if (!epsilonCeVarMap.containsKey(new Pair<>(originalIs, trembleActionSet))) {
-//                                        // store new joint action and trembling action in map
-//                                        epsilonCeVarMap.put(new Pair<>(originalIs, trembleActionSet), epsilonCeVarMap.size());
-//                                    }
-//
-//                                    // iterate over all trembling actions deviations with current player in tremble set
-//                                    expr = ctx.mkAdd(expr, ctx.mkMul(vars[epsilonCeVarMap.get(new Pair<>(originalIs, trembleActionSet))],
-//                                            ctx.mkSub(ctx.mkReal(String.valueOf(utilities.get(ciAction).get(currentPlayerIndex))),
-//                                                    ctx.mkReal(String.valueOf(utilities.get(eiAction).get(currentPlayerIndex))))));
-//
-//
-//                                    System.out.println("\t\t--------------------------------");
-//                                    // undoing previous bitset operations
-//                                    ciAction = (BitSet) originalIs.clone();
-//                                    eiAction = (BitSet) originalJs.clone();
-//
-//                                }
-//                                ciAction.andNot(opponentAction);
-//                                eiAction.andNot(opponentAction);
-//                            }
-//                            if (actionIndex != deviationIndex) {
-//                                solver.Add(ctx.mkGe(expr, zero));
-//                                System.out.println("\t\t------------------------------------------------------------------------------------------------");
-//                                System.out.println(expr);
-//                                counter++;
-////									System.out.println("counter: " + counter);
-//                                System.out.println(epsilonCeVarMap.toString());
-//                                System.out.println("\t\t------------------------------------------------------------------------------------------------");
-//                            }
-//                        }
-//                    }
+
                 }
             }
         }
-//        // Sets unused variables to zero
-//        for (int c = 0; c < epsilonCeVarMap.size(); c++) {
-//            if (!epsilonCeVarMap.containsValue(c)) {
-//                solver.Add(ctx.mkEq(vars[c], zero));
-//            }
-//        }
-//
-//        expr = ctx.mkInt(0);
-//        for (int c = 0; c < vars.length; c++) {
-//            expr = ctx.mkAdd(expr, vars[c]);
-//        }
-//        solver.Add(ctx.mkEq(expr, one));
-//
-//
-//        // If and optimal solution is found, set the values and strategies
-//        if (solver.Check() == Status.SATISFIABLE) {
-//
-//            for (int c = 0; c < vars.length; c++) {
-//                d.add(c, getDoubleValue(solver.getModel(), vars[c]));
-//            }
-//            for (int c = 0; c < payoff_vars.length; c++) {
-//                payoffs_result.add(getDoubleValue(solver.getModel(), payoff_vars[c]));
-//            }
-//            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
-//            result.setPayoffVector(payoffs_result);
-//            strategy_result.add(d);
-//            result.setStrategy(strategy_result);
-//            System.out.println("Solution found!");
-//            System.out.println(epsilonCeVarMap);
-//            System.out.println(payoffs_result);
-//            System.out.println(d);
-//        } else {
-//            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.UNSAT);
-//        }
-//
-//        solver.Pop();
-//        return result;
-        // Sets unused variables to zero
 
         System.out.println(solver);
-        for (int c = utilities.size(); c < vars.length; c++) {
-            solver.Add(ctx.mkEq(vars[c], zero));
-        }
 
+
+        // all variables should sum up to 1
         expr = ctx.mkInt(0);
         for (int c = 0; c < vars.length; c++) {
             expr = ctx.mkAdd(expr, vars[c]);
         }
         solver.Add(ctx.mkEq(expr, one));
 
-        // Builds a payoff expression for each player, and one for the sum of all payoffs
-        for (int i = 0; i < n_coalitions; i++) {
-            payoffs[i] = zero;
+
+        // set all unused variables to zero
+        for (int i = epsilonCeVarMap.size(); i < vars.length; i++) {
+            solver.Add(ctx.mkEq(vars[i], zero));
         }
-        // iterating over all joint actions
-        for (BitSet e : utilities.keySet()) {
 
-            ArrayList<Integer> allVariables = getValuesWithMatchingFirstBitSet(epsilonCeVarMap, e);
-            ArithExpr tmpExpr = zero;
 
-            for (int var : allVariables) {
-                tmpExpr = ctx.mkAdd(vars[var], tmpExpr);
+
+
+        // TODO: remove this later
+        // DEBUG
+        for (Pair<BitSet, BitSet> keySet : epsilonCeVarMap.keySet()) {
+            // excluding ({0,1}{x}) for all x from the solution
+            if (keySet.first.get(0) && keySet.first.get(1)) {
+                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
             }
-
-            // payoff of joint action
-            double u = 0.0;
-            for (int c = 0; c < n_coalitions; c++) {
-                u += utilities.get(e).get(c);
-                // we need the individual payoffs later for the lower priority objectives
-                // we need all paths which can lead to this joint outcome
-
-
-                payoffs[c] = ctx.mkAdd(payoffs[c], ctx.mkMul(tmpExpr, ctx.mkReal(String.valueOf(utilities.get(e).get(c)))));
+            // excluding ({x,y}{0}) for all x,y from the solution
+            // excluding ({x,y}{1}) for all x,y from the solution
+            if (keySet.second.get(0)&& keySet.first.get(1)) {
+                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
             }
-
-            expr = ctx.mkAdd(expr, ctx.mkMul(tmpExpr, ctx.mkReal(String.valueOf(u))));
-        }
-        for (int c = 0; c < n_coalitions; c++) {
-            payoff_vars[c] = ctx.mkRealConst("p" + c);
-            solver.Add(ctx.mkEq(payoff_vars[c], payoffs[c]));
         }
 
-        solver.Add(ctx.mkEq(obj_var, expr));
-        solver.MkMaximize(expr);
 
-        // Lower priority objectives of maximising the payoff of each player in decreasing order
-        for (int c = 0; c < n_coalitions; c++) {
-            solver.MkMaximize(payoffs[(c)]);
-        }
+        int tmp = 30;
+        while (solver.Check() == Status.SATISFIABLE) {
+            Model model = solver.getModel();
+            if (tmp == 0) {
 
-		/*
-		for (BoolExpr e : s.getAssertions()) {
-			System.out.println(e);
-		}
-		*/
-
-        // If and optimal solution is found, set the values and strategies
-        if (solver.Check() == Status.SATISFIABLE) {
-            for (int c = 0; c < vars.length; c++) {
-                d.add(c, getDoubleValue(solver.getModel(), vars[c]));
+                break;
             }
-            for (int c = 0; c < payoff_vars.length; c++) {
-                payoffs_result.add(getDoubleValue(solver.getModel(), payoff_vars[c]));
+            tmp--;
+
+            // Create a blocking clause to exclude the current model
+            BoolExpr blockingClause = ctx.mkFalse();
+            ArrayList<BoolExpr> usedVariables = new ArrayList<>();
+
+
+            for (FuncDecl constant : model.getConstDecls()) {
+                Expr constantValue = model.getConstInterp(constant);
+                if (!constantValue.toString().equals("0")) {
+                    System.out.println(constant.getName() + " = " + constantValue);
+                    solver.Add(ctx.mkEq(constant.apply(), zero));
+                }
+                BoolExpr currentNotEqual = ctx.mkNot(ctx.mkEq(constant.apply(), constantValue));
+                blockingClause = ctx.mkOr(blockingClause, currentNotEqual);
             }
-            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
-            result.setPayoffVector(payoffs_result);
-            strategy_result.add(d);
-            result.setStrategy(strategy_result);
-        } else {
-            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.UNSAT);
+//            BoolExpr conjunction = ctx.mkAnd(usedVariables.toArray(new BoolExpr[0]));
+//            BoolExpr exclusionClause = ctx.mkNot(conjunction);
+
+            // Add the blocking clause to the solver
+            System.out.println("----------------------------------");
+//            solver.Add(blockingClause);
+//            solver.Add(exclusionClause);
+//            solver.Add(ctx.mkEq(vars[0], zero));
+//            solver.Add(ctx.mkEq(vars[1], zero));
         }
+
+        System.out.println(epsilonCeVarMap);
+
 
 //        System.out.println(solver);
         solver.Pop();
@@ -556,158 +397,158 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                                                 ArrayList<ArrayList<Integer>> strategies,
                                                 HashMap<BitSet, Integer> ce_var_map, int type) {
 
-        if (true) {
+
             return computeEpsilonCorrelatedEquilibrium(utilities, ce_constraints, strategies);
-        }
-
-        EquilibriumResult result = new EquilibriumResult();
-        ArrayList<Double> payoffs_result = new ArrayList<Double>();
-        ArrayList<Distribution> strategy_result = new ArrayList<>();
-        Distribution d = new Distribution();
-        ArithExpr expr;
-        BitSet is, js;
-        double u;
-        int c, q, r;
-        is = new BitSet();
-        js = new BitSet();
-
-        solver.Push();
-        expr = ctx.mkInt(0);
-
-        // Builds a payoff expression for each player, and one for the sum of all payoffs
-        for (int i = 0; i < n_coalitions; i++) {
-            payoffs[i] = zero;
-        }
-        // iterating over all joint actions
-        for (BitSet e : utilities.keySet()) {
-            // payoff of joint action
-            u = 0.0;
-            for (c = 0; c < n_coalitions; c++) {
-                u += utilities.get(e).get(c);
-                // we need the individual payoffs later for the lower priority objectives
-                payoffs[c] = ctx.mkAdd(payoffs[c], ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(utilities.get(e).get(c)))));
-            }
-            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(u))));
-        }
-        for (c = 0; c < n_coalitions; c++) {
-            payoff_vars[c] = ctx.mkRealConst("p" + c);
-            solver.Add(ctx.mkEq(payoff_vars[c], payoffs[c]));
-        }
-
-//		System.out.println(s.toString());
 
 
-        // In case of the fair variant (minimise the difference between the largest and smallest payoffs)
-        // we first need to add auxiliary constraints
-        // The default case is social-welfare, in which we just maximise the sum
-        switch (type) {
-            case CSGModelCheckerEquilibria.FAIR: {
-                RealExpr ph;
-                RealExpr pl;
-                ph = ctx.mkRealConst("ph"); // Highest payoff
-                pl = ctx.mkRealConst("pl"); // Lowest payoff
-                BoolExpr bh;
-                BoolExpr bl;
-                // Additional constraints for fair
-                for (int i = 0; i < n_coalitions; i++) {
-                    bh = ctx.mkTrue();
-                    bl = ctx.mkTrue();
-                    for (int j = 0; j < n_coalitions; j++) {
-                        if (i != j) {
-                            bh = ctx.mkAnd(bh, ctx.mkGe(payoffs[i], payoffs[j]));
-                            bl = ctx.mkAnd(bl, ctx.mkLe(payoffs[i], payoffs[j]));
-                        }
-                    }
-                    solver.Add(ctx.mkImplies(bh, ctx.mkEq(ph, payoffs[i])));
-                    solver.Add(ctx.mkImplies(bl, ctx.mkEq(pl, payoffs[i])));
-                }
-                solver.MkMinimize(ctx.mkSub(ph, pl));
-                break;
-            }
-            default: {
-                // Primary objective is maximising the sum
-                solver.Add(ctx.mkEq(obj_var, expr));
-                solver.MkMaximize(expr);
-            }
-        }
-
-        // Lower priority objectives of maximising the payoff of each player in decreasing order
-        for (c = 0; c < n_coalitions; c++) {
-            solver.MkMaximize(payoffs[(c)]);
-        }
-
-        // Constraints for correlated equilibria
-        // for each action of coalition c
-        for (c = 0; c < n_coalitions; c++) {
-            // strategies contains for each coalition, the indices of all coalition actions in s
-            // for each action of coalition c
-            for (q = 0; q < strategies.get(c).size(); q++) {
-                expr = zero;
-                is.clear();
-                // storing current action
-                is.set(strategies.get(c).get(q));
-
-                // for each action of coalition c
-                for (r = 0; r < strategies.get(c).size(); r++) {
-                    // empty bitset
-                    js.clear();
-
-                    // for each possible payoff of coalition c after playing action q
-                    for (BitSet e : ce_constraints.get(c).get(q).keySet()) {
-                        // bitset "is" is now containing
-                        is.or(e);
-                        js.or(e);
-                        if (q != r) {
-                            js.set(strategies.get(c).get(r));
-                            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(is)],
-                                    ctx.mkSub(ctx.mkReal(String.valueOf(utilities.get(is).get(c))),
-                                            ctx.mkReal(String.valueOf(utilities.get(js).get(c))))));
-                        }
-                        is.andNot(e);
-                        js.andNot(e);
-                    }
-                    if (q != r) {
-                        solver.Add(ctx.mkGe(expr, zero));
-                    }
-                }
-            }
-        }
-
-        // Sets unused variables to zero
-        for (c = utilities.size(); c < vars.length; c++) {
-            solver.Add(ctx.mkEq(vars[c], zero));
-        }
-
-        expr = ctx.mkInt(0);
-        for (c = 0; c < vars.length; c++) {
-            expr = ctx.mkAdd(expr, vars[c]);
-        }
-        solver.Add(ctx.mkEq(expr, one));
-
-
-//		for (BoolExpr e : s.getAssertions()) {
-//			System.out.println(e);
-//		}
-
-
-        // If and optimal solution is found, set the values and strategies
-        if (solver.Check() == Status.SATISFIABLE) {
-            for (c = 0; c < vars.length; c++) {
-                d.add(c, getDoubleValue(solver.getModel(), vars[c]));
-            }
-            for (c = 0; c < payoff_vars.length; c++) {
-                payoffs_result.add(getDoubleValue(solver.getModel(), payoff_vars[c]));
-            }
-            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
-            result.setPayoffVector(payoffs_result);
-            strategy_result.add(d);
-            result.setStrategy(strategy_result);
-        } else {
-            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.UNSAT);
-        }
-
-        solver.Pop();
-        return result;
+//        EquilibriumResult result = new EquilibriumResult();
+//        ArrayList<Double> payoffs_result = new ArrayList<Double>();
+//        ArrayList<Distribution> strategy_result = new ArrayList<>();
+//        Distribution d = new Distribution();
+//        ArithExpr expr;
+//        BitSet is, js;
+//        double u;
+//        int c, q, r;
+//        is = new BitSet();
+//        js = new BitSet();
+//
+//        solver.Push();
+//        expr = ctx.mkInt(0);
+//
+//        // Builds a payoff expression for each player, and one for the sum of all payoffs
+//        for (int i = 0; i < n_coalitions; i++) {
+//            payoffs[i] = zero;
+//        }
+//        // iterating over all joint actions
+//        for (BitSet e : utilities.keySet()) {
+//            // payoff of joint action
+//            u = 0.0;
+//            for (c = 0; c < n_coalitions; c++) {
+//                u += utilities.get(e).get(c);
+//                // we need the individual payoffs later for the lower priority objectives
+//                payoffs[c] = ctx.mkAdd(payoffs[c], ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(utilities.get(e).get(c)))));
+//            }
+//            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(u))));
+//        }
+//        for (c = 0; c < n_coalitions; c++) {
+//            payoff_vars[c] = ctx.mkRealConst("p" + c);
+//            solver.Add(ctx.mkEq(payoff_vars[c], payoffs[c]));
+//        }
+//
+////		System.out.println(s.toString());
+//
+//
+//        // In case of the fair variant (minimise the difference between the largest and smallest payoffs)
+//        // we first need to add auxiliary constraints
+//        // The default case is social-welfare, in which we just maximise the sum
+//        switch (type) {
+//            case CSGModelCheckerEquilibria.FAIR: {
+//                RealExpr ph;
+//                RealExpr pl;
+//                ph = ctx.mkRealConst("ph"); // Highest payoff
+//                pl = ctx.mkRealConst("pl"); // Lowest payoff
+//                BoolExpr bh;
+//                BoolExpr bl;
+//                // Additional constraints for fair
+//                for (int i = 0; i < n_coalitions; i++) {
+//                    bh = ctx.mkTrue();
+//                    bl = ctx.mkTrue();
+//                    for (int j = 0; j < n_coalitions; j++) {
+//                        if (i != j) {
+//                            bh = ctx.mkAnd(bh, ctx.mkGe(payoffs[i], payoffs[j]));
+//                            bl = ctx.mkAnd(bl, ctx.mkLe(payoffs[i], payoffs[j]));
+//                        }
+//                    }
+//                    solver.Add(ctx.mkImplies(bh, ctx.mkEq(ph, payoffs[i])));
+//                    solver.Add(ctx.mkImplies(bl, ctx.mkEq(pl, payoffs[i])));
+//                }
+//                solver.MkMinimize(ctx.mkSub(ph, pl));
+//                break;
+//            }
+//            default: {
+//                // Primary objective is maximising the sum
+//                solver.Add(ctx.mkEq(obj_var, expr));
+//                solver.MkMaximize(expr);
+//            }
+//        }
+//
+//        // Lower priority objectives of maximising the payoff of each player in decreasing order
+//        for (c = 0; c < n_coalitions; c++) {
+//            solver.MkMaximize(payoffs[(c)]);
+//        }
+//
+//        // Constraints for correlated equilibria
+//        // for each action of coalition c
+//        for (c = 0; c < n_coalitions; c++) {
+//            // strategies contains for each coalition, the indices of all coalition actions in s
+//            // for each action of coalition c
+//            for (q = 0; q < strategies.get(c).size(); q++) {
+//                expr = zero;
+//                is.clear();
+//                // storing current action
+//                is.set(strategies.get(c).get(q));
+//
+//                // for each action of coalition c
+//                for (r = 0; r < strategies.get(c).size(); r++) {
+//                    // empty bitset
+//                    js.clear();
+//
+//                    // for each possible payoff of coalition c after playing action q
+//                    for (BitSet e : ce_constraints.get(c).get(q).keySet()) {
+//                        // bitset "is" is now containing
+//                        is.or(e);
+//                        js.or(e);
+//                        if (q != r) {
+//                            js.set(strategies.get(c).get(r));
+//                            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(is)],
+//                                    ctx.mkSub(ctx.mkReal(String.valueOf(utilities.get(is).get(c))),
+//                                            ctx.mkReal(String.valueOf(utilities.get(js).get(c))))));
+//                        }
+//                        is.andNot(e);
+//                        js.andNot(e);
+//                    }
+//                    if (q != r) {
+//                        solver.Add(ctx.mkGe(expr, zero));
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Sets unused variables to zero
+//        for (c = utilities.size(); c < vars.length; c++) {
+//            solver.Add(ctx.mkEq(vars[c], zero));
+//        }
+//
+//        expr = ctx.mkInt(0);
+//        for (c = 0; c < vars.length; c++) {
+//            expr = ctx.mkAdd(expr, vars[c]);
+//        }
+//        solver.Add(ctx.mkEq(expr, one));
+//
+//
+////		for (BoolExpr e : s.getAssertions()) {
+////			System.out.println(e);
+////		}
+//
+//
+//        // If and optimal solution is found, set the values and strategies
+//        if (solver.Check() == Status.SATISFIABLE) {
+//            for (c = 0; c < vars.length; c++) {
+//                d.add(c, getDoubleValue(solver.getModel(), vars[c]));
+//            }
+//            for (c = 0; c < payoff_vars.length; c++) {
+//                payoffs_result.add(getDoubleValue(solver.getModel(), payoff_vars[c]));
+//            }
+//            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
+//            result.setPayoffVector(payoffs_result);
+//            strategy_result.add(d);
+//            result.setStrategy(strategy_result);
+//        } else {
+//            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.UNSAT);
+//        }
+//
+//        solver.Pop();
+//        return result;
     }
 
     /**
