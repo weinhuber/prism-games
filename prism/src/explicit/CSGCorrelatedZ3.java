@@ -138,6 +138,15 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
         return result;
     }
 
+    private Pair<BitSet, BitSet> getPairFromValue(HashMap<Pair<BitSet, BitSet>, Integer> map, Integer value) {
+        for (HashMap.Entry<Pair<BitSet, BitSet>, Integer> entry : map.entrySet()) {
+            if (entry.getValue().equals(value)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     public EquilibriumResult computeEpsilonCorrelatedEquilibrium(HashMap<BitSet, ArrayList<Double>> utilities,
                                                                  ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
                                                                  ArrayList<ArrayList<Integer>> strategies) {
@@ -274,7 +283,97 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
             }
         }
 
-        System.out.println(solver);
+//        // TODO: remove this later excluding ({0,1}{x}) ({x,y}{0}) ({x,y}{1}) for all x,y
+//        // DEBUG
+//        for (Pair<BitSet, BitSet> keySet : epsilonCeVarMap.keySet()) {
+//            // excluding ({0,1}{x}) for all x from the solution
+//            if (keySet.first.get(0) && keySet.first.get(1)) {
+//                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
+//            }
+//            // excluding ({x,y}{0}) for all x,y from the solution
+//            // excluding ({x,y}{1}) for all x,y from the solution
+//            if (keySet.second.get(0)&& keySet.first.get(1)) {
+//                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
+//            }
+//        }
+
+
+        RealExpr epsilon = ctx.mkRealConst("epsilon");
+//        solver.Add(ctx.mkGt(epsilon, zero));
+//        solver.Add(ctx.mkGe(one, epsilon));
+//        solver.MkMinimize(epsilon);
+
+        // set epsilon to 0.1
+        solver.Add(ctx.mkEq(epsilon, ctx.mkReal("0.00000000000000000000000000001")));
+
+
+        // constraint 2.3
+        // for each joint outcome
+        for (BitSet jointOutcome : utilities.keySet()) {
+            // for each player
+            for (int currentPlayerIndex = 0; currentPlayerIndex < n_coalitions; currentPlayerIndex++) {
+
+                // computing all possible subsets of other players
+                ArrayList<Integer> playerList = IntStream.range(0, n_coalitions)
+                        .boxed()
+                        .collect(Collectors.toCollection(ArrayList::new));
+                playerList.remove(currentPlayerIndex);
+
+                // list of all possible subsets (of other players trembling)
+                // S ⊆ N_{-i}
+                ArrayList<ArrayList<Integer>> tremblePlayerSubsets = getSubsets(playerList);
+
+                // for each subset S
+                for (ArrayList<Integer> tremblePlayerSubset: tremblePlayerSubsets) {
+
+                    // computing C_S
+                    ArrayList<ArrayList<Integer>> trembleActions = getTrembleActions(tremblePlayerSubset, strategies);
+
+                    // for each action e_S ∈ C_S
+                    for (ArrayList<Integer> trembleAction : trembleActions){
+
+                        // convert ArrayList<Integer> to Bitset
+                        BitSet eS = new BitSet();
+                        for (Integer index : trembleAction) {
+                            eS.set(index);
+                        }
+
+                        ArithExpr sum = ctx.mkInt(0);
+                        StringBuilder stringSum = new StringBuilder();
+                        // for all actions of player i
+                        for (int actionIndex = 0; actionIndex < strategies.get(currentPlayerIndex).size(); actionIndex++) {
+                            BitSet eSi = new BitSet();
+                            eSi.set(strategies.get(currentPlayerIndex).get(actionIndex));
+
+                            // computing e_S u {i}
+                            eSi.or(eS);
+
+                            if (!epsilonCeVarMap.containsKey(new Pair<>(jointOutcome, eSi))) {
+                                // if we discovered a new variable, add it to the list
+                                epsilonCeVarMap.put(new Pair<>(jointOutcome, eSi), epsilonCeVarMap.size());
+                            }
+
+                            sum = ctx.mkAdd(sum, vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))]);
+                            stringSum.append(" (").append(jointOutcome).append(", ").append(eSi).append(") +");
+
+                            // constraint 2.4
+                            solver.Add(ctx.mkImplies(ctx.mkGt(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eS))], zero),
+                                    ctx.mkGt(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))], zero)));
+
+                            System.out.println("IMPL: " + jointOutcome + ", " + eS + " > 0 => " + jointOutcome + ", " + eSi + " > 0");
+
+                        }
+
+                        ArithExpr leftSide = ctx.mkMul(epsilon, vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eS))]);
+                        ArithExpr rightSide = ctx.mkMul(ctx.mkSub(ctx.mkInt(1),epsilon), sum);
+
+                        System.out.println("SUM: epsilon * (" + jointOutcome + ", " + eS + ") >=  (1-epsilon) * " + stringSum);
+
+                        solver.Add(ctx.mkGe(leftSide, rightSide));
+                    }
+                }
+            }
+        }
 
 
         // all variables should sum up to 1
@@ -290,62 +389,28 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
             solver.Add(ctx.mkEq(vars[i], zero));
         }
 
+//        System.out.println(solver);
 
 
-
-        // TODO: remove this later
-        // DEBUG
-        for (Pair<BitSet, BitSet> keySet : epsilonCeVarMap.keySet()) {
-            // excluding ({0,1}{x}) for all x from the solution
-            if (keySet.first.get(0) && keySet.first.get(1)) {
-                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
-            }
-            // excluding ({x,y}{0}) for all x,y from the solution
-            // excluding ({x,y}{1}) for all x,y from the solution
-            if (keySet.second.get(0)&& keySet.first.get(1)) {
-                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
-            }
-        }
-
-
-        int tmp = 30;
-        while (solver.Check() == Status.SATISFIABLE) {
+        if (solver.Check() == Status.UNKNOWN) {
+            System.out.println(solver.getReasonUnknown());
             Model model = solver.getModel();
-            if (tmp == 0) {
-
-                break;
-            }
-            tmp--;
-
-            // Create a blocking clause to exclude the current model
-            BoolExpr blockingClause = ctx.mkFalse();
-            ArrayList<BoolExpr> usedVariables = new ArrayList<>();
-
-
-            for (FuncDecl constant : model.getConstDecls()) {
-                Expr constantValue = model.getConstInterp(constant);
-                if (!constantValue.toString().equals("0")) {
-                    System.out.println(constant.getName() + " = " + constantValue);
-                    solver.Add(ctx.mkEq(constant.apply(), zero));
+            if (model != null) {
+                System.out.println(model);
+                for (BoolExpr constraint : solver.getAssertions()) {
+                    if (!model.eval(constraint, false).isTrue()) {
+                        System.out.println("Unsatisfied constraint: " + constraint);
+                    }
                 }
-                BoolExpr currentNotEqual = ctx.mkNot(ctx.mkEq(constant.apply(), constantValue));
-                blockingClause = ctx.mkOr(blockingClause, currentNotEqual);
             }
-//            BoolExpr conjunction = ctx.mkAnd(usedVariables.toArray(new BoolExpr[0]));
-//            BoolExpr exclusionClause = ctx.mkNot(conjunction);
-
-            // Add the blocking clause to the solver
-            System.out.println("----------------------------------");
-//            solver.Add(blockingClause);
-//            solver.Add(exclusionClause);
-//            solver.Add(ctx.mkEq(vars[0], zero));
-//            solver.Add(ctx.mkEq(vars[1], zero));
+        } else {
+                System.out.println(solver.Check());
+                Model model = solver.getModel();
+                System.out.println(model);
         }
 
         System.out.println(epsilonCeVarMap);
 
-
-//        System.out.println(solver);
         solver.Pop();
 
         return result;
