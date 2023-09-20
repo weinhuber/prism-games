@@ -240,11 +240,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 
                                 System.out.println("\t\t\t\t\te_S: "+ eS);
 
-                                // η(c,e_S)
-                                if (!epsilonCeVarMap.containsKey(new Pair<>(ciActionClone, eS))) {
-                                    // if we discovered a new variable, add it to the list
-                                    epsilonCeVarMap.put(new Pair<>(ciActionClone, eS), epsilonCeVarMap.size());
-                                }
+
 
                                 // computing bitset (c_{-S}, e_S)
                                 // step 1: removing all possible actions of players in S
@@ -257,6 +253,15 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                                 eiAction.andNot(tremblePlayersAvailableSet);
                                 // step 2: inject eS with S = S
                                 eiAction.or(eS);
+
+                                if (ciAction.equals(ciActionClone)) {
+//                                    continue;
+                                }
+                                // η(c,e_S)
+                                if (!epsilonCeVarMap.containsKey(new Pair<>(ciActionClone, eS))) {
+                                    // if we discovered a new variable, add it to the list
+                                    epsilonCeVarMap.put(new Pair<>(ciActionClone, eS), epsilonCeVarMap.size());
+                                }
 
                                 System.out.println("\t\t\t\t\t\t\tη(c,e_S): \t\t\t\t\tη("+ ciActionClone + "," + eS + ")");
                                 System.out.println("\t\t\t\t\t\t\t(c_{-S}, e_S): \t\t\t\t" + ciAction);
@@ -283,22 +288,10 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
             }
         }
 
-//        // TODO: remove this later excluding ({0,1}{x}) ({x,y}{0}) ({x,y}{1}) for all x,y
-//        // DEBUG
-//        for (Pair<BitSet, BitSet> keySet : epsilonCeVarMap.keySet()) {
-//            // excluding ({0,1}{x}) for all x from the solution
-//            if (keySet.first.get(0) && keySet.first.get(1)) {
-//                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
-//            }
-//            // excluding ({x,y}{0}) for all x,y from the solution
-//            // excluding ({x,y}{1}) for all x,y from the solution
-//            if (keySet.second.get(0)&& keySet.first.get(1)) {
-//                solver.Add(ctx.mkEq(vars[epsilonCeVarMap.get(keySet)], zero));
-//            }
-//        }
 
 
         RealExpr epsilon = ctx.mkRealConst("epsilon");
+        // currently not supported with Z3
 //        solver.Add(ctx.mkGt(epsilon, zero));
 //        solver.Add(ctx.mkGe(one, epsilon));
 //        solver.MkMinimize(epsilon);
@@ -389,8 +382,13 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
             solver.Add(ctx.mkEq(vars[i], zero));
         }
 
-//        System.out.println(solver);
 
+//        solver.Add(ctx.mkEq(vars[0], zero));
+//        solver.Add(ctx.mkEq(vars[1], zero));
+//        solver.Add(ctx.mkEq(vars[2], zero));
+//        solver.Add(ctx.mkEq(vars[14], zero));
+//        solver.Add(ctx.mkGt(vars[0], zero));
+        System.out.println(solver);
 
         if (solver.Check() == Status.UNKNOWN) {
             System.out.println(solver.getReasonUnknown());
@@ -407,9 +405,42 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                 System.out.println(solver.Check());
                 Model model = solver.getModel();
                 System.out.println(model);
+                if (solver.Check() == Status.UNSATISFIABLE){
+                    for (BoolExpr constraint : solver.getAssertions()) {
+                        if (!model.eval(constraint, false).isTrue()) {
+                            System.out.println("Unsatisfied constraint: " + constraint);
+                        }
+                    }
+                }
+
         }
 
-        System.out.println(epsilonCeVarMap);
+
+        for (int i = 0; i < epsilonCeVarMap.size(); i++) {
+            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
+        }
+
+
+        // check whether we can find a solution with c={1,3} and any es
+//        BitSet tmp = new BitSet();
+//        tmp.set(1);
+//        tmp.set(3);
+//        ArrayList<Integer> varList = getValuesWithMatchingFirstBitSet(epsilonCeVarMap,tmp);
+//
+//        for (int varIndex: varList) {
+//            solver.Push();
+//            // check if this holds
+//            System.out.println("Checking: " + getPairFromValue(epsilonCeVarMap, varIndex));
+//            System.out.println(varIndex);
+//            solver.Add(ctx.mkGt(vars[varIndex], zero));
+//            System.out.println(solver.Check());
+//
+//            if (solver.Check() == Status.SATISFIABLE) {
+////                System.out.println(solver.getModel());
+//            }
+//            solver.Pop();
+//        }
+
 
         solver.Pop();
 
