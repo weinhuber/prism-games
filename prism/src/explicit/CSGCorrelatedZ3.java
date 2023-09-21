@@ -35,6 +35,7 @@ import java.util.stream.IntStream;
 import com.microsoft.z3.*;
 
 import com.microsoft.z3.Model;
+import gurobi.GRBException;
 import prism.Pair;
 
 /**
@@ -58,6 +59,8 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 
     private String name;
     private int n_coalitions;
+
+    private int n_entries;
 
     /**
      * Creates a new CSGCorrelatedZ3 (without initialisation)
@@ -88,6 +91,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
         vars = new RealExpr[n_entries * n_entries * n_entries + 1];
         payoffs = new ArithExpr[n_coalitions];
         this.n_coalitions = n_coalitions;
+        this.n_entries = n_entries;
 
         // Setup of variables p_\alpha
         // 0 ≤ p_\alpha ≤ 1
@@ -147,6 +151,8 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
         return null;
     }
 
+
+    // Acceptable Correlated Equilibria Z3
     public EquilibriumResult computeEpsilonCorrelatedEquilibrium(HashMap<BitSet, ArrayList<Double>> utilities,
                                                                  ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
                                                                  ArrayList<ArrayList<Integer>> strategies) {
@@ -297,7 +303,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 //        solver.MkMinimize(epsilon);
 
         // set epsilon to 0.1
-        solver.Add(ctx.mkEq(epsilon, ctx.mkReal("0.00000000000000000000000000001")));
+        solver.Add(ctx.mkEq(epsilon, ctx.mkReal("0.0000001")));
 
 
         // constraint 2.3
@@ -388,59 +394,70 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 //        solver.Add(ctx.mkEq(vars[2], zero));
 //        solver.Add(ctx.mkEq(vars[14], zero));
 //        solver.Add(ctx.mkGt(vars[0], zero));
-        System.out.println(solver);
+//        System.out.println(solver);
+//
+//        if (solver.Check() == Status.UNKNOWN) {
+//            System.out.println(solver.getReasonUnknown());
+//            Model model = solver.getModel();
+//            if (model != null) {
+//                System.out.println(model);
+//                for (BoolExpr constraint : solver.getAssertions()) {
+//                    if (!model.eval(constraint, false).isTrue()) {
+//                        System.out.println("Unsatisfied constraint: " + constraint);
+//                    }
+//                }
+//            }
+//        } else {
+//                System.out.println(solver.Check());
+//                Model model = solver.getModel();
+//                System.out.println(model);
+//                if (solver.Check() == Status.UNSATISFIABLE){
+//                    for (BoolExpr constraint : solver.getAssertions()) {
+//                        if (!model.eval(constraint, false).isTrue()) {
+//                            System.out.println("Unsatisfied constraint: " + constraint);
+//                        }
+//                    }
+//                }
+//
+//        }
 
-        if (solver.Check() == Status.UNKNOWN) {
+
+        Status solverStatus = solver.Check();
+        System.out.println(solverStatus);
+        Model model = solver.getModel();
+        if (solverStatus == Status.UNKNOWN) {
             System.out.println(solver.getReasonUnknown());
-            Model model = solver.getModel();
             if (model != null) {
-                System.out.println(model);
                 for (BoolExpr constraint : solver.getAssertions()) {
                     if (!model.eval(constraint, false).isTrue()) {
                         System.out.println("Unsatisfied constraint: " + constraint);
                     }
                 }
             }
-        } else {
-                System.out.println(solver.Check());
-                Model model = solver.getModel();
-                System.out.println(model);
-                if (solver.Check() == Status.UNSATISFIABLE){
-                    for (BoolExpr constraint : solver.getAssertions()) {
-                        if (!model.eval(constraint, false).isTrue()) {
-                            System.out.println("Unsatisfied constraint: " + constraint);
-                        }
-                    }
+        } else if (solver.Check() == Status.UNSATISFIABLE) {
+            for (BoolExpr constraint : solver.getAssertions()) {
+                if (!model.eval(constraint, false).isTrue()) {
+                    System.out.println("Unsatisfied constraint: " + constraint);
                 }
+            }
+        } else {
+            for (int i = 0; i < vars.length; i++){
+                double value = getDoubleValue(model, vars[i]);
+
+                if (value > 0) {
+                    System.out.println(getPairFromValue(epsilonCeVarMap, i) + ": " + value);
+                }
+            }
+            // printing epsilon
+            System.out.println("epsilon: " + getDoubleValue(model, epsilon));
 
         }
 
 
-        for (int i = 0; i < epsilonCeVarMap.size(); i++) {
-            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
-        }
-
-
-        // check whether we can find a solution with c={1,3} and any es
-//        BitSet tmp = new BitSet();
-//        tmp.set(1);
-//        tmp.set(3);
-//        ArrayList<Integer> varList = getValuesWithMatchingFirstBitSet(epsilonCeVarMap,tmp);
-//
-//        for (int varIndex: varList) {
-//            solver.Push();
-//            // check if this holds
-//            System.out.println("Checking: " + getPairFromValue(epsilonCeVarMap, varIndex));
-//            System.out.println(varIndex);
-//            solver.Add(ctx.mkGt(vars[varIndex], zero));
-//            System.out.println(solver.Check());
-//
-//            if (solver.Check() == Status.SATISFIABLE) {
-////                System.out.println(solver.getModel());
-//            }
-//            solver.Pop();
+        // printing var map
+//        for (int i = 0; i < epsilonCeVarMap.size(); i++) {
+//            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
 //        }
-
 
         solver.Pop();
 
