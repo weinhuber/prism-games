@@ -394,32 +394,6 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 //        solver.Add(ctx.mkEq(vars[2], zero));
 //        solver.Add(ctx.mkEq(vars[14], zero));
 //        solver.Add(ctx.mkGt(vars[0], zero));
-//        System.out.println(solver);
-//
-//        if (solver.Check() == Status.UNKNOWN) {
-//            System.out.println(solver.getReasonUnknown());
-//            Model model = solver.getModel();
-//            if (model != null) {
-//                System.out.println(model);
-//                for (BoolExpr constraint : solver.getAssertions()) {
-//                    if (!model.eval(constraint, false).isTrue()) {
-//                        System.out.println("Unsatisfied constraint: " + constraint);
-//                    }
-//                }
-//            }
-//        } else {
-//                System.out.println(solver.Check());
-//                Model model = solver.getModel();
-//                System.out.println(model);
-//                if (solver.Check() == Status.UNSATISFIABLE){
-//                    for (BoolExpr constraint : solver.getAssertions()) {
-//                        if (!model.eval(constraint, false).isTrue()) {
-//                            System.out.println("Unsatisfied constraint: " + constraint);
-//                        }
-//                    }
-//                }
-//
-//        }
 
 
         Status solverStatus = solver.Check();
