@@ -303,7 +303,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 //        solver.MkMinimize(epsilon);
 
         // set epsilon to 0.1
-        solver.Add(ctx.mkEq(epsilon, ctx.mkReal("0.0000001")));
+        solver.Add(ctx.mkEq(epsilon, ctx.mkReal("0.00000006666667316516683")));
 
 
         // constraint 2.3
@@ -389,6 +389,8 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
         }
 
 
+//        solver.Add(ctx.mkEq(vars[3], zero));
+//        solver.Add(ctx.mkEq(vars[6], zero));
 //        solver.Add(ctx.mkEq(vars[0], zero));
 //        solver.Add(ctx.mkEq(vars[1], zero));
 //        solver.Add(ctx.mkEq(vars[2], zero));
@@ -424,11 +426,32 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
             }
             // printing epsilon
             System.out.println("epsilon: " + getDoubleValue(model, epsilon));
-
         }
 
+//        System.out.println(solver);
 
-        // printing var map
+
+        // manual iteration to find epsilon
+//        double epsilonValue = 1.0;
+//        double decreaseFactor = 0.5;  // Example: halving epsilon in each iteration.
+//
+//        while (true) {
+//            solver.Push();
+//            solver.Add(ctx.mkEq(epsilon, ctx.mkReal(String.valueOf(epsilonValue))));
+//
+//            if (solver.Check() != Status.SATISFIABLE) {
+//                System.out.println("Model became UNSAT with epsilon = " + epsilonValue);
+//                break;  // Exit the loop if the model is not satisfiable.
+//            }
+//
+//            // If still satisfiable, prepare for next iteration.
+//            solver.Pop();
+//
+//            epsilonValue *= decreaseFactor;  // Decrease the value of epsilon.
+//        }
+
+
+//         printing var map
 //        for (int i = 0; i < epsilonCeVarMap.size(); i++) {
 //            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
 //        }
@@ -485,7 +508,17 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                                                 HashMap<BitSet, Integer> ce_var_map, int type) {
 
 
+        // debug and testing hack
+        if (false) {
             return computeEpsilonCorrelatedEquilibrium(utilities, ce_constraints, strategies);
+        } else {
+            try {
+                CSGCorrelatedRobustGurobi redirectClass = new CSGCorrelatedRobustGurobi(this.n_entries, this.n_coalitions);
+                return redirectClass.computeRobustCorrelatedEquilibrium(utilities, ce_constraints, strategies);
+            } catch (GRBException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
 
 //        EquilibriumResult result = new EquilibriumResult();
