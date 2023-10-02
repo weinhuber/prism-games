@@ -387,10 +387,10 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                             GRBVar y = model.addVar(0.0, 1.0, 0.0, GRB.BINARY, "y");
                             // η(c,e_S) <= y
                             model.addConstr(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eS))], GRB.LESS_EQUAL, y, "LHSconstraint(2.4)");
-                            // η(c,e_S u {i}) <= 1-y
+                            // η(c,e_S u {i}) <= MIN_VALUE * y
                             GRBLinExpr expr = new GRBLinExpr();
-                            expr.addConstant(1.0);
-                            expr.addTerm(-1.0, y);
+//                            expr.addConstant(1.0);
+                            expr.addTerm(10e-4, y);
                             model.addConstr(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))], GRB.LESS_EQUAL, expr, "RHSconstraint(2.4)");
                             model.update();
                         }
