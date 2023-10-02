@@ -303,7 +303,7 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 //        solver.MkMinimize(epsilon);
 
         // set epsilon to 0.1
-        solver.Add(ctx.mkEq(epsilon, ctx.mkReal("0.00000006666667316516683")));
+        solver.Add(ctx.mkEq(epsilon, ctx.mkReal(""+ 10e-6)));
 
 
         // constraint 2.3
@@ -507,11 +507,16 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
                                                 ArrayList<ArrayList<Integer>> strategies,
                                                 HashMap<BitSet, Integer> ce_var_map, int type) {
 
+        int debugSwitch = 0;
+        // 0 = Z3
+        // 1 = Gurobi
+        // 2 = regular correlated equilibrium
+
 
         // debug and testing hack
-        if (false) {
+        if (debugSwitch == 1) {
             return computeEpsilonCorrelatedEquilibrium(utilities, ce_constraints, strategies);
-        } else {
+        } else if (debugSwitch == 1){
             try {
                 CSGCorrelatedRobustGurobi redirectClass = new CSGCorrelatedRobustGurobi(this.n_entries, this.n_coalitions);
                 return redirectClass.computeRobustCorrelatedEquilibrium(utilities, ce_constraints, strategies);
@@ -520,155 +525,171 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
             }
         }
 
+        try {
+            CSGCorrelatedRobustGurobi redirectClass = new CSGCorrelatedRobustGurobi(this.n_entries, this.n_coalitions);
+            redirectClass.computeRobustCorrelatedEquilibrium(utilities, ce_constraints, strategies);
+        } catch (GRBException e) {
+            throw new RuntimeException(e);
+        }
 
-//        EquilibriumResult result = new EquilibriumResult();
-//        ArrayList<Double> payoffs_result = new ArrayList<Double>();
-//        ArrayList<Distribution> strategy_result = new ArrayList<>();
-//        Distribution d = new Distribution();
-//        ArithExpr expr;
-//        BitSet is, js;
-//        double u;
-//        int c, q, r;
-//        is = new BitSet();
-//        js = new BitSet();
-//
-//        solver.Push();
-//        expr = ctx.mkInt(0);
-//
-//        // Builds a payoff expression for each player, and one for the sum of all payoffs
-//        for (int i = 0; i < n_coalitions; i++) {
-//            payoffs[i] = zero;
-//        }
-//        // iterating over all joint actions
-//        for (BitSet e : utilities.keySet()) {
-//            // payoff of joint action
-//            u = 0.0;
-//            for (c = 0; c < n_coalitions; c++) {
-//                u += utilities.get(e).get(c);
-//                // we need the individual payoffs later for the lower priority objectives
-//                payoffs[c] = ctx.mkAdd(payoffs[c], ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(utilities.get(e).get(c)))));
-//            }
-//            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(u))));
-//        }
-//        for (c = 0; c < n_coalitions; c++) {
-//            payoff_vars[c] = ctx.mkRealConst("p" + c);
-//            solver.Add(ctx.mkEq(payoff_vars[c], payoffs[c]));
-//        }
-//
-////		System.out.println(s.toString());
-//
-//
-//        // In case of the fair variant (minimise the difference between the largest and smallest payoffs)
-//        // we first need to add auxiliary constraints
-//        // The default case is social-welfare, in which we just maximise the sum
-//        switch (type) {
-//            case CSGModelCheckerEquilibria.FAIR: {
-//                RealExpr ph;
-//                RealExpr pl;
-//                ph = ctx.mkRealConst("ph"); // Highest payoff
-//                pl = ctx.mkRealConst("pl"); // Lowest payoff
-//                BoolExpr bh;
-//                BoolExpr bl;
-//                // Additional constraints for fair
-//                for (int i = 0; i < n_coalitions; i++) {
-//                    bh = ctx.mkTrue();
-//                    bl = ctx.mkTrue();
-//                    for (int j = 0; j < n_coalitions; j++) {
-//                        if (i != j) {
-//                            bh = ctx.mkAnd(bh, ctx.mkGe(payoffs[i], payoffs[j]));
-//                            bl = ctx.mkAnd(bl, ctx.mkLe(payoffs[i], payoffs[j]));
-//                        }
-//                    }
-//                    solver.Add(ctx.mkImplies(bh, ctx.mkEq(ph, payoffs[i])));
-//                    solver.Add(ctx.mkImplies(bl, ctx.mkEq(pl, payoffs[i])));
-//                }
-//                solver.MkMinimize(ctx.mkSub(ph, pl));
-//                break;
-//            }
-//            default: {
-//                // Primary objective is maximising the sum
-//                solver.Add(ctx.mkEq(obj_var, expr));
-//                solver.MkMaximize(expr);
-//            }
-//        }
-//
-//        // Lower priority objectives of maximising the payoff of each player in decreasing order
-//        for (c = 0; c < n_coalitions; c++) {
-//            solver.MkMaximize(payoffs[(c)]);
-//        }
-//
-//        // Constraints for correlated equilibria
-//        // for each action of coalition c
-//        for (c = 0; c < n_coalitions; c++) {
-//            // strategies contains for each coalition, the indices of all coalition actions in s
-//            // for each action of coalition c
-//            for (q = 0; q < strategies.get(c).size(); q++) {
-//                expr = zero;
-//                is.clear();
-//                // storing current action
-//                is.set(strategies.get(c).get(q));
-//
-//                // for each action of coalition c
-//                for (r = 0; r < strategies.get(c).size(); r++) {
-//                    // empty bitset
-//                    js.clear();
-//
-//                    // for each possible payoff of coalition c after playing action q
-//                    for (BitSet e : ce_constraints.get(c).get(q).keySet()) {
-//                        // bitset "is" is now containing
-//                        is.or(e);
-//                        js.or(e);
-//                        if (q != r) {
-//                            js.set(strategies.get(c).get(r));
-//                            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(is)],
-//                                    ctx.mkSub(ctx.mkReal(String.valueOf(utilities.get(is).get(c))),
-//                                            ctx.mkReal(String.valueOf(utilities.get(js).get(c))))));
-//                        }
-//                        is.andNot(e);
-//                        js.andNot(e);
-//                    }
-//                    if (q != r) {
-//                        solver.Add(ctx.mkGe(expr, zero));
-//                    }
-//                }
-//            }
-//        }
-//
-//        // Sets unused variables to zero
-//        for (c = utilities.size(); c < vars.length; c++) {
-//            solver.Add(ctx.mkEq(vars[c], zero));
-//        }
-//
-//        expr = ctx.mkInt(0);
-//        for (c = 0; c < vars.length; c++) {
-//            expr = ctx.mkAdd(expr, vars[c]);
-//        }
-//        solver.Add(ctx.mkEq(expr, one));
-//
-//
-////		for (BoolExpr e : s.getAssertions()) {
-////			System.out.println(e);
-////		}
-//
-//
-//        // If and optimal solution is found, set the values and strategies
-//        if (solver.Check() == Status.SATISFIABLE) {
-//            for (c = 0; c < vars.length; c++) {
-//                d.add(c, getDoubleValue(solver.getModel(), vars[c]));
-//            }
-//            for (c = 0; c < payoff_vars.length; c++) {
-//                payoffs_result.add(getDoubleValue(solver.getModel(), payoff_vars[c]));
-//            }
-//            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
-//            result.setPayoffVector(payoffs_result);
-//            strategy_result.add(d);
-//            result.setStrategy(strategy_result);
-//        } else {
-//            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.UNSAT);
-//        }
-//
-//        solver.Pop();
-//        return result;
+        System.out.println("##############################################");
+
+
+        EquilibriumResult result = new EquilibriumResult();
+        ArrayList<Double> payoffs_result = new ArrayList<Double>();
+        ArrayList<Distribution> strategy_result = new ArrayList<>();
+        Distribution d = new Distribution();
+        ArithExpr expr;
+        BitSet is, js;
+        double u;
+        int c, q, r;
+        is = new BitSet();
+        js = new BitSet();
+
+        solver.Push();
+        expr = ctx.mkInt(0);
+
+        // Builds a payoff expression for each player, and one for the sum of all payoffs
+        for (int i = 0; i < n_coalitions; i++) {
+            payoffs[i] = zero;
+        }
+        // iterating over all joint actions
+        for (BitSet e : utilities.keySet()) {
+            // payoff of joint action
+            u = 0.0;
+            for (c = 0; c < n_coalitions; c++) {
+                u += utilities.get(e).get(c);
+                // we need the individual payoffs later for the lower priority objectives
+                payoffs[c] = ctx.mkAdd(payoffs[c], ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(utilities.get(e).get(c)))));
+            }
+            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(e)], ctx.mkReal(String.valueOf(u))));
+        }
+        for (c = 0; c < n_coalitions; c++) {
+            payoff_vars[c] = ctx.mkRealConst("p" + c);
+            solver.Add(ctx.mkEq(payoff_vars[c], payoffs[c]));
+        }
+
+//		System.out.println(s.toString());
+
+
+        // In case of the fair variant (minimise the difference between the largest and smallest payoffs)
+        // we first need to add auxiliary constraints
+        // The default case is social-welfare, in which we just maximise the sum
+        switch (type) {
+            case CSGModelCheckerEquilibria.FAIR: {
+                RealExpr ph;
+                RealExpr pl;
+                ph = ctx.mkRealConst("ph"); // Highest payoff
+                pl = ctx.mkRealConst("pl"); // Lowest payoff
+                BoolExpr bh;
+                BoolExpr bl;
+                // Additional constraints for fair
+                for (int i = 0; i < n_coalitions; i++) {
+                    bh = ctx.mkTrue();
+                    bl = ctx.mkTrue();
+                    for (int j = 0; j < n_coalitions; j++) {
+                        if (i != j) {
+                            bh = ctx.mkAnd(bh, ctx.mkGe(payoffs[i], payoffs[j]));
+                            bl = ctx.mkAnd(bl, ctx.mkLe(payoffs[i], payoffs[j]));
+                        }
+                    }
+                    solver.Add(ctx.mkImplies(bh, ctx.mkEq(ph, payoffs[i])));
+                    solver.Add(ctx.mkImplies(bl, ctx.mkEq(pl, payoffs[i])));
+                }
+                solver.MkMinimize(ctx.mkSub(ph, pl));
+                break;
+            }
+            default: {
+                // Primary objective is maximising the sum
+                solver.Add(ctx.mkEq(obj_var, expr));
+                solver.MkMaximize(expr);
+            }
+        }
+
+        // Lower priority objectives of maximising the payoff of each player in decreasing order
+        for (c = 0; c < n_coalitions; c++) {
+            solver.MkMaximize(payoffs[(c)]);
+        }
+
+        // Constraints for correlated equilibria
+        // for each action of coalition c
+        for (c = 0; c < n_coalitions; c++) {
+            // strategies contains for each coalition, the indices of all coalition actions in s
+            // for each action of coalition c
+            for (q = 0; q < strategies.get(c).size(); q++) {
+                expr = zero;
+                is.clear();
+                // storing current action
+                is.set(strategies.get(c).get(q));
+
+                // for each action of coalition c
+                for (r = 0; r < strategies.get(c).size(); r++) {
+                    // empty bitset
+                    js.clear();
+
+                    // for each possible payoff of coalition c after playing action q
+                    for (BitSet e : ce_constraints.get(c).get(q).keySet()) {
+                        // bitset "is" is now containing
+                        is.or(e);
+                        js.or(e);
+                        if (q != r) {
+                            js.set(strategies.get(c).get(r));
+                            expr = ctx.mkAdd(expr, ctx.mkMul(vars[ce_var_map.get(is)],
+                                    ctx.mkSub(ctx.mkReal(String.valueOf(utilities.get(is).get(c))),
+                                            ctx.mkReal(String.valueOf(utilities.get(js).get(c))))));
+                        }
+                        is.andNot(e);
+                        js.andNot(e);
+                    }
+                    if (q != r) {
+                        solver.Add(ctx.mkGe(expr, zero));
+                    }
+                }
+            }
+        }
+
+        // Sets unused variables to zero
+        for (c = utilities.size(); c < vars.length; c++) {
+            solver.Add(ctx.mkEq(vars[c], zero));
+        }
+
+        expr = ctx.mkInt(0);
+        for (c = 0; c < vars.length; c++) {
+            expr = ctx.mkAdd(expr, vars[c]);
+        }
+        solver.Add(ctx.mkEq(expr, one));
+
+
+//		for (BoolExpr e : s.getAssertions()) {
+//			System.out.println(e);
+//		}
+
+        System.out.println(ce_var_map);
+
+        // If and optimal solution is found, set the values and strategies
+        if (solver.Check() == Status.SATISFIABLE) {
+            for (c = 0; c < vars.length; c++) {
+                d.add(c, getDoubleValue(solver.getModel(), vars[c]));
+
+                double tmpVal = getDoubleValue(solver.getModel(), vars[c]);
+                if (tmpVal > 0) {
+                	System.out.println("v" + c + " = " + tmpVal);
+                }
+            }
+            for (c = 0; c < payoff_vars.length; c++) {
+                payoffs_result.add(getDoubleValue(solver.getModel(), payoff_vars[c]));
+            }
+            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
+            result.setPayoffVector(payoffs_result);
+            System.out.println(result.getPayoffVector());
+
+            result.setStrategy(strategy_result);
+        } else {
+            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.UNSAT);
+        }
+
+        solver.Pop();
+        return result;
     }
 
     /**
