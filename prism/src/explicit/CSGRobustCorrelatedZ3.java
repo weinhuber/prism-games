@@ -504,9 +504,8 @@ public class CSGRobustCorrelatedZ3 implements CSGCorrelated {
             double[] strat_payoffs = new double[n_coalitions];
             Arrays.fill(strat_payoffs, 0.0);
 
-            int stratIndex = 0;
             // iterating over all joint outcomes
-            for (BitSet c: utilities.keySet()) {
+            for (BitSet c: ce_var_map.keySet()) {
                 // printing reward
 //                System.out.println(c + " " + utilities.get(c));
 
@@ -516,8 +515,7 @@ public class CSGRobustCorrelatedZ3 implements CSGCorrelated {
                 for (Integer cVar: cVars) {
                     prop += getDoubleValue(model, vars[cVar]);
                 }
-                d.add(stratIndex, prop);
-                stratIndex++;
+                d.add(ce_var_map.get(c), prop);
                 robustStrategy.put(c, prop);
                 for (int i = 0; i < n_coalitions; i++) {
                     strat_payoffs[i] += utilities.get(c).get(i) * prop;
