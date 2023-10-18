@@ -42,6 +42,7 @@ import com.microsoft.z3.RatNum;
 import com.microsoft.z3.RealExpr;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Version;
+import gurobi.GRBException;
 
 /**
  * Z3-based implementation for correlated equilibria computation
@@ -261,11 +262,20 @@ public class CSGCorrelatedZ3 implements CSGCorrelated {
 
 		s.Pop();
 
+		// Z3
 //		System.out.println("Regular: " + result.getStatus() + " " + result.getPayoffVector() + " " + result.getStrategy());
 //		CSGRobustCorrelatedZ3 tmp = new CSGRobustCorrelatedZ3(this.n_entries, this.n_coalitions);
 //
 //		EquilibriumResult robustResult = tmp.computeEquilibrium(utilities, ce_constraints, strategies, ce_var_map, type);
 //		System.out.println("Robust: " + robustResult.getStatus() + " " + robustResult.getPayoffVector() + " " + robustResult.getStrategy());
+
+		// Gurobi
+//		try {
+//			CSGCorrelatedRobustGurobi tmp = new CSGCorrelatedRobustGurobi(this.n_entries, this.n_coalitions);
+//			EquilibriumResult robustResult = tmp.computeRobustCorrelatedEquilibrium(utilities, ce_constraints, strategies);
+//		} catch (GRBException e) {
+//			throw new RuntimeException(e);
+//		}
 		return result;
 	}
 
