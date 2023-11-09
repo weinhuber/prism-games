@@ -28,20 +28,11 @@
 package explicit;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import gurobi.GRBException;
-import lpsolve.LpSolve;
 import org.apache.commons.math3.util.Precision;
 
-import explicit.CSGModelCheckerEquilibria.CSGResultStatus;
 import explicit.rewards.CSGRewards;
 import explicit.rewards.MDPRewards;
 import parser.ast.Coalition;
@@ -49,16 +40,11 @@ import parser.ast.ExpressionTemporal;
 import prism.Pair;
 import prism.PrismComponent;
 import prism.PrismException;
-import prism.PrismFileLog;
 import prism.PrismLangException;
-import prism.PrismNotSupportedException;
 import prism.PrismSettings;
 import prism.PrismUtils;
 import strat.CSGStrategy;
 import strat.CSGStrategy.CSGStrategyType;
-import strat.Strategy;
-
-import javax.sound.midi.Soundbank;
 
 public class CSGModelCheckerEquilibria extends CSGModelChecker
 {
@@ -1468,6 +1454,11 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 		// helper for epsilon calculation
 		ArrayList<List<Map<Integer, BitSet>>> mappingHistory = new ArrayList<List<Map<Integer, BitSet>>>();
+		ArrayList<ArrayList<ArrayList<Integer>>> strategyHistory = new ArrayList<ArrayList<ArrayList<Integer>>>();
+		ArrayList<HashMap<BitSet, ArrayList<Double>>> utilitiesHistory = new ArrayList<HashMap<BitSet, ArrayList<Double>>>();
+		ArrayList<ArrayList<ArrayList<HashMap<BitSet, Double>>>> ceConstraintsHistory = new ArrayList<ArrayList<ArrayList<HashMap<BitSet, Double>>>>();
+		ArrayList<HashMap<BitSet, Integer>> ceVarMapHistory = new ArrayList<HashMap<BitSet, Integer>>();
+
 
 		// Check if generating strategies is enabled
 		if (genStrat) {
@@ -1626,6 +1617,9 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 						}
 					}
 					equilibrium = stepEquilibriaTwoPlayer(csg, rewards, mapping, singleStrategies, solution, s, eqType, crit, withRewards, min);
+					System.out.println("##############");
+					System.out.println(strategies);
+					System.out.println("##############");
 					values[0][s] = equilibrium[1];
 					values[1][s] = equilibrium[2];
 
@@ -1633,19 +1627,31 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 					if (genStrat) {
 						switch (eqType) {
 							case CORR: {
+								List<Map<Integer, BitSet>> copyMapping = new ArrayList<Map<Integer, BitSet>>(mapping);
+								ArrayList<ArrayList<Integer>> copyStrategy = new ArrayList<ArrayList<Integer>>(strategies);
+								HashMap<BitSet, ArrayList<Double>> copyUtilities = new HashMap<>(utilities);
+								ArrayList<ArrayList<HashMap<BitSet, Double>>> copyCEConstraints = new ArrayList<ArrayList<HashMap<BitSet, Double>>>(ceConstraints);
+								HashMap<BitSet, Integer> copyCEVarMap = new HashMap<>(ceVarMap);
+
 								if (localStrategies.get(0).get(0).get(s) == null) {
 									localStrategies.get(0).get(0).set(s, singleStrategies.get(0).get(0));
-									while (mappingHistory.size() <= s) {
-										mappingHistory.add(null);
-									}
-									mappingHistory.set(s, mapping);
 								} else if (!localStrategies.get(0).get(0).get(s).equals(singleStrategies.get(0).get(0)) && checkEquilibriumChange(solution, equilibrium, s)) {
 									localStrategies.get(0).get(0).set(s, singleStrategies.get(0).get(0));
-									while (mappingHistory.size() <= s) {
-										mappingHistory.add(null);
-									}
-									mappingHistory.set(s, mapping);
 								}
+
+								while (mappingHistory.size() <= s) {
+									mappingHistory.add(null);
+									strategyHistory.add(null);
+									utilitiesHistory.add(null);
+									ceVarMapHistory.add(null);
+									ceConstraintsHistory.add(null);
+								}
+								mappingHistory.set(s, copyMapping);
+								strategyHistory.set(s, copyStrategy);
+								utilitiesHistory.set(s, copyUtilities);
+								ceVarMapHistory.set(s, copyCEVarMap);
+								ceConstraintsHistory.set(s, copyCEConstraints);
+
 								break;
 							}
 							default: {
@@ -1674,18 +1680,19 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			done = done & PrismUtils.doublesAreClose(solution[1], temporary[1], termCritParam, termCrit == TermCrit.ABSOLUTE);
 
 			if (done) {
-				System.out.println(mapping);
+//				System.out.println(mapping);
 //				System.out.println(utilities);
-				System.out.println(ceVarMap);
+//				System.out.println(ceVarMap);
 
 				// print strategies
-				System.out.println(strategies);
+//				System.out.println(strategies);
 
-				System.out.println(mappingHistory);
+//				System.out.println(mappingHistory);
 				// calculate epsilon for all states of local strategy
 				System.out.println("Strategy synthesis complete. Starting epsilon calculation...");
 
-				ArrayList<Double> epsilonValues = new ArrayList<>();
+
+				ArrayList<Double> epsilonValues = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
 
 				for (int state = 0; state < localStrategies.get(0).get(0).size(); state++) {
 					System.out.println("\tState " + state + ": " + csg.getStatesList().get(state));
@@ -1701,10 +1708,15 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 								for (Map.Entry<BitSet, Double> action : strategy.entrySet()) {
 									BitSet bitSetKey = action.getKey();
 									Double prop = action.getValue();
-
+									System.out.println("\t\t\tutilities: " + utilitiesHistory.get(state));
 									List<Map<Integer, BitSet>> currentMapping = mappingHistory.get(state);
 									System.out.println("\t\t\tJoint Action " + bitSetKey + " : " + prop);
 									System.out.println("\t\t\tMapping: " + currentMapping);
+									System.out.println("\t\t\tStrategies0: " + strategyHistory.get(state).get(0));
+									System.out.println("\t\t\tStrategies1: " + strategyHistory.get(state).get(1));
+
+									// what was previously strategies is now strategyHistory.get(state)
+
 
 
 									BitSet jointAction = new BitSet();
@@ -1712,27 +1724,54 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 									// player 0
 									BitSet player0action = (BitSet) actionIndexes[0].clone();
 									player0action.and(bitSetKey);
-									int actionIndex = getKeyForBitSet(currentMapping.get(0), player0action.nextSetBit(0));
-									jointAction.set(strategies.get(0).get(actionIndex));
+									int actionIndex = getKeyForBitSet(currentMapping.get(0), player0action);
+
+									try {
+										jointAction.set(strategyHistory.get(state).get(0).get(actionIndex));
+									} catch (Exception e) {
+										continue;
+									}
 
 									// player 1
 									BitSet player1action = (BitSet) actionIndexes[1].clone();
 									player1action.and(bitSetKey);
-									actionIndex = getKeyForBitSet(currentMapping.get(1), player1action.nextSetBit(1));
-									jointAction.set(strategies.get(1).get(actionIndex));
+									actionIndex = getKeyForBitSet(currentMapping.get(1), player1action);
+									try {
+										jointAction.set(strategyHistory.get(state).get(1).get(actionIndex));
+									} catch (Exception e) {
+										continue;
+									}
+
 
 									strategyToCheck.put(jointAction, prop);
 								}
 
 								try {
-									CSGCorrelatedRobustGurobi robustGurobi = new CSGCorrelatedRobustGurobi(utilities.size(), coalitions.size());
-									double epsilon = robustGurobi.computeRobustness(strategyToCheck, utilities, ceConstraints, strategies, ceVarMap, eqType);
-									System.out.println("\t\t\t"+strategyToCheck);
-									System.out.println("\t\t\t"+epsilon);
+									System.out.println("\t\t\tstrategy to check: " + strategyToCheck);
+									if (strategyHistory.get(state).get(0).size() == 1 || strategyHistory.get(state).get(1).size() == 1) {
+										System.out.println("\t\t\tNo constraints");
+//										epsilonValues.add(null);
+										continue;
+									}
+									CSGCorrelatedRobustGurobi robustGurobi = new CSGCorrelatedRobustGurobi(utilitiesHistory.get(state).size(), coalitions.size());
+									double epsilon = robustGurobi.computeRobustness(strategyToCheck, utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
 
-									epsilonValues.add(epsilon);
+
+
+
+									System.out.println("\t\t\tepsilon: " + epsilon);
+
+//									CSGCorrelatedRobustGurobi robustGurobi1 = new CSGCorrelatedRobustGurobi(utilities.size(), coalitions.size());
+//									EquilibriumResult robustStrat = robustGurobi1.computeRobustCorrelatedEquilibrium(utilities, ceConstraints, strategies, ceVarMap, eqType);
+
+
+//									epsilonValues.add(epsilon);
+//									while (epsilonValues.size() <= state) {
+//										epsilonValues.add(null);
+//									}
+									epsilonValues.set(state, epsilon);
 								} catch (GRBException e) {
-									throw new RuntimeException(e);
+									System.out.println(e.getMessage());
 								}
 							} else {
 //								System.out.println("\t\t\tPlayer " + player + ", Iteration " + iteration + ": No strategy.");
@@ -1743,6 +1782,7 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 				System.out.println("#######################################");
 				System.out.println("Epsilon values: " + epsilonValues);
+				System.out.println(epsilonValues.size());
 
 //
 				// print strategies
@@ -1913,12 +1953,9 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 		}
 	}
 
-	public Integer getKeyForBitSet(Map<Integer, BitSet> map, Integer target) {
-		BitSet tmp = new BitSet();
-		tmp.set(target);
-
+	public Integer getKeyForBitSet(Map<Integer, BitSet> map, BitSet target) {
 		for (Map.Entry<Integer, BitSet> entry : map.entrySet()) {
-			if (entry.getValue().equals(tmp)) {
+			if (entry.getValue().equals(target)) {
 				return entry.getKey();
 			}
 		}

@@ -71,6 +71,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
     public CSGCorrelatedRobustGurobi(int n_entries, int n_coalitions) throws GRBException {
         this.n_coalitions = n_coalitions;
         GRBEnv env = new GRBEnv(true);
+        env.set("OutputFlag", "0");
         env.set("NonConvex", "2");
         env.set("Quad", "1");
         env.start();
@@ -153,7 +154,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         }
 
 
-        System.out.println("all actions available in this game: " + strategies.toString());
+//        System.out.println("all actions available in this game: " + strategies.toString());
 
         // 1 >= epsilon > 0
         GRBVar epsilon = model.addVar(10e-4, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
@@ -168,7 +169,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
         // for each player i
         for (int currentPlayerIndex = 0; currentPlayerIndex < n_coalitions; currentPlayerIndex++) {
-            System.out.println("\ti ∈ N: " + currentPlayerIndex);
+//            System.out.println("\ti ∈ N: " + currentPlayerIndex);
 
             // list of other players (not including playerIndex)
             // N_{-i}
@@ -186,7 +187,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
             // c_i ∈ C_i
             for (int actionIndex = 0; actionIndex < strategies.get(currentPlayerIndex).size(); actionIndex++) {
-                System.out.println("\t\tc_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(actionIndex));
+//                System.out.println("\t\tc_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(actionIndex));
 
                 // e_i ∈ C_i
                 for (int deviationIndex = 0; deviationIndex < strategies.get(currentPlayerIndex).size(); deviationIndex++) {
@@ -194,14 +195,14 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                         continue;
                     }
 
-                    System.out.println("\t\te_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(deviationIndex));
+//                    System.out.println("\t\te_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(deviationIndex));
 
                     GRBLinExpr expr = new GRBLinExpr();
 
 
                     // c_{-i} ∈ C_{-i}
                     for (BitSet opponentAction : ce_constraints.get(currentPlayerIndex).get(actionIndex).keySet()) {
-                        System.out.println("\t\t\tc_{-" + currentPlayerIndex + "} ∈ C_{-" + currentPlayerIndex + "}: " + opponentAction);
+//                        System.out.println("\t\t\tc_{-" + currentPlayerIndex + "} ∈ C_{-" + currentPlayerIndex + "}: " + opponentAction);
 
                         BitSet ciAction = new BitSet();
                         ciAction.set(strategies.get(currentPlayerIndex).get(actionIndex));
@@ -221,7 +222,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                         // S ⊆ N_{-i}
                         for (ArrayList<Integer> tremblePlayerSubset : tremblePlayerSubsets) {
 
-                            System.out.println("\t\t\t\tS: " + tremblePlayerSubset);
+//                            System.out.println("\t\t\t\tS: " + tremblePlayerSubset);
 
                             // pre-computation which is needed later when computing bitset (c_{-S}, e_S)
                             BitSet tremblePlayersAvailableSet = getPlayersAvailableSet(strategies, tremblePlayerSubset);
@@ -238,7 +239,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                     eS.set(index);
                                 }
 
-                                System.out.println("\t\t\t\t\te_S: "+ eS);
+//                                System.out.println("\t\t\t\t\te_S: "+ eS);
 
 
 
@@ -263,11 +264,11 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                     epsilonCeVarMap.put(new Pair<>(ciActionClone, eS), epsilonCeVarMap.size());
                                 }
 
-                                System.out.println("\t\t\t\t\t\t\tη(c,e_S): \t\t\t\t\tη("+ ciActionClone + "," + eS + ")");
-                                System.out.println("\t\t\t\t\t\t\t(c_{-S}, e_S): \t\t\t\t" + ciAction);
-                                System.out.println("\t\t\t\t\t\t\t(c_{-S ∪ {i}}, e_S ∪ {i}): \t" + eiAction);
-                                System.out.println(ciAction + " " + utilities.get(ciAction).get(currentPlayerIndex));
-                                System.out.println(eiAction + " " + utilities.get(eiAction).get(currentPlayerIndex));
+//                                System.out.println("\t\t\t\t\t\t\tη(c,e_S): \t\t\t\t\tη("+ ciActionClone + "," + eS + ")");
+//                                System.out.println("\t\t\t\t\t\t\t(c_{-S}, e_S): \t\t\t\t" + ciAction);
+//                                System.out.println("\t\t\t\t\t\t\t(c_{-S ∪ {i}}, e_S ∪ {i}): \t" + eiAction);
+//                                System.out.println(ciAction + " " + utilities.get(ciAction).get(currentPlayerIndex));
+//                                System.out.println(eiAction + " " + utilities.get(eiAction).get(currentPlayerIndex));
 
                                 GRBVar currentVar = vars[epsilonCeVarMap.get(new Pair<>(ciActionClone, eS))];
 
@@ -282,16 +283,16 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                 // lower priority objective: maximise payoff of player i
                                 payoff_vars.get(currentPlayerIndex).addTerm(utilities.get(ciAction).get(currentPlayerIndex), currentVar);
 
-                                System.out.println("------------------------------------------------------");
-                                System.out.println(expr);
-                                System.out.println("------------------------------------------------------");
-                                System.out.println(epsilonCeVarMap);
+//                                System.out.println("------------------------------------------------------");
+//                                System.out.println(expr);
+//                                System.out.println("------------------------------------------------------");
+//                                System.out.println(epsilonCeVarMap);
                             }
                         }
                     }
-                    System.out.println("Intermediate expr: -----------------------------------");
-                    System.out.println(expr);
-                    System.out.println("------------------------------------------------------");
+//                    System.out.println("Intermediate expr: -----------------------------------");
+//                    System.out.println(expr);
+//                    System.out.println("------------------------------------------------------");
                     model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "CEconstraint" + currentPlayerIndex + "_" + actionIndex + "_" + deviationIndex);
                     model.update();
                 }
@@ -362,7 +363,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
                             stringSum.append(" (").append(jointOutcome).append(", ").append(eSi).append(") +");
 
-                            System.out.println("IMPL: " + jointOutcome + ", " + eS + " > 0 => " + jointOutcome + ", " + eSi + " > 0");
+//                            System.out.println("IMPL: " + jointOutcome + ", " + eS + " > 0 => " + jointOutcome + ", " + eSi + " > 0");
 
                             // Constraint 2.4: if η(c,e_S) > 0 then η(c,e_S u {i}) > 0
 //                            // introducing new binary variable y indicating if η(c,e_S) > 0
@@ -389,7 +390,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                         }
 
 
-                        System.out.println("SUM: epsilon * (" + jointOutcome + ", " + eS + ") >=  (1-epsilon) * " + stringSum);
+//                        System.out.println("SUM: epsilon * (" + jointOutcome + ", " + eS + ") >=  (1-epsilon) * " + stringSum);
 
 
                         // Add the constraint to the model
@@ -461,17 +462,17 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
         // helper print statement to see which variable corresponds to which joint outcome
         for (int i = 0; i < epsilonCeVarMap.size(); i++) {
-            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
+//            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
         }
 
         int status = model.get(GRB.IntAttr.Status);
 
         if (status == GRB.Status.OPTIMAL) {
-            System.out.println("Found optimal solution!");
+//            System.out.println("Found optimal solution!");
             HashMap<BitSet, Double> robustStrategy = new HashMap<>();
 
             for (int i = 0; i < vars.length; i++) {
-                System.out.println("Value of var[" + i + "]: " + vars[i].get(GRB.DoubleAttr.X));
+//                System.out.println("Value of var[" + i + "]: " + vars[i].get(GRB.DoubleAttr.X));
             }
 
             double[] payoffs = new double[n_coalitions];
@@ -480,7 +481,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
             // iterating over all joint outcomes
             for (BitSet c: ce_var_map.keySet()) {
                 // printing reward
-                System.out.println(c + " " + utilities.get(c));
+//                System.out.println(c + " " + utilities.get(c));
 
                 ArrayList<Integer> cVars = getValuesWithMatchingFirstBitSet(epsilonCeVarMap, c);
 
@@ -494,29 +495,28 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                 }
             }
 
-            System.out.println("robust strategy: " + robustStrategy);
-            System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
-            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
+//            System.out.println("robust strategy: " + robustStrategy);
+//            System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
+//            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
             for (int i = 0; i < n_coalitions; i++) {
-                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
+//                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
             }
 
 
         } else if (status == GRB.Status.INFEASIBLE) {
-            System.out.println("Model is infeasible");
+//            System.out.println("Model is infeasible");
             // To diagnose the infeasibilities, you might consider calculating an Irreducible Infeasible Set (IIS)
             model.computeIIS();
             model.write("model.ilp");
+            return -1;
         } else {
-            System.out.println("Optimization finished with status " + status);
+//            System.out.println("Optimization finished with status " + status);
+            return -1;
         }
 
         // pretty print the model
         model.write("model.lp");
 
-        System.out.println("------------------------------------------------------");
-        System.out.println("------------------------------------------------------");
-        System.out.println("------------------------------------------------------");
 
         return epsilon.get(GRB.DoubleAttr.X);
     }
@@ -525,7 +525,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         // Acceptable Correlated Equilibria Gurobi
     public EquilibriumResult computeRobustCorrelatedEquilibrium(HashMap<BitSet, ArrayList<Double>> utilities,
                                                                 ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
-                                                                ArrayList<ArrayList<Integer>> strategies) throws GRBException {
+                                                                ArrayList<ArrayList<Integer>> strategies, HashMap<BitSet, Integer> ce_var_map, int crit) throws GRBException {
 
         EquilibriumResult result = new EquilibriumResult();
 
@@ -541,10 +541,10 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         }
 
 
-        System.out.println("all actions available in this game: " + strategies.toString());
+//        System.out.println("all actions available in this game: " + strategies.toString());
 
         // 1 >= epsilon > 0
-        GRBVar epsilon = model.addVar(Double.MIN_VALUE, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
+        GRBVar epsilon = model.addVar(10e-4, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
 
 //        GRBVar minDouble = model.addVar(0.000009, 1.0, 0.0, GRB.CONTINUOUS, "minDouble");
 //        model.addConstr(minDouble, GRB.EQUAL, Double.MIN_VALUE, "minDoubleConstraint");
@@ -556,7 +556,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
         // for each player i
         for (int currentPlayerIndex = 0; currentPlayerIndex < n_coalitions; currentPlayerIndex++) {
-            System.out.println("\ti ∈ N: " + currentPlayerIndex);
+//            System.out.println("\ti ∈ N: " + currentPlayerIndex);
 
             // list of other players (not including playerIndex)
             // N_{-i}
@@ -574,7 +574,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
             // c_i ∈ C_i
             for (int actionIndex = 0; actionIndex < strategies.get(currentPlayerIndex).size(); actionIndex++) {
-                System.out.println("\t\tc_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(actionIndex));
+//                System.out.println("\t\tc_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(actionIndex));
 
                 // e_i ∈ C_i
                 for (int deviationIndex = 0; deviationIndex < strategies.get(currentPlayerIndex).size(); deviationIndex++) {
@@ -582,14 +582,14 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                         continue;
                     }
 
-                    System.out.println("\t\te_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(deviationIndex));
+//                    System.out.println("\t\te_" + currentPlayerIndex + " ∈ C_" + currentPlayerIndex + ": " + strategies.get(currentPlayerIndex).get(deviationIndex));
 
                     GRBLinExpr expr = new GRBLinExpr();
 
 
                     // c_{-i} ∈ C_{-i}
                     for (BitSet opponentAction : ce_constraints.get(currentPlayerIndex).get(actionIndex).keySet()) {
-                        System.out.println("\t\t\tc_{-" + currentPlayerIndex + "} ∈ C_{-" + currentPlayerIndex + "}: " + opponentAction);
+//                        System.out.println("\t\t\tc_{-" + currentPlayerIndex + "} ∈ C_{-" + currentPlayerIndex + "}: " + opponentAction);
 
                         BitSet ciAction = new BitSet();
                         ciAction.set(strategies.get(currentPlayerIndex).get(actionIndex));
@@ -609,7 +609,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                         // S ⊆ N_{-i}
                         for (ArrayList<Integer> tremblePlayerSubset : tremblePlayerSubsets) {
 
-                            System.out.println("\t\t\t\tS: " + tremblePlayerSubset);
+//                            System.out.println("\t\t\t\tS: " + tremblePlayerSubset);
 
                             // pre-computation which is needed later when computing bitset (c_{-S}, e_S)
                             BitSet tremblePlayersAvailableSet = getPlayersAvailableSet(strategies, tremblePlayerSubset);
@@ -626,7 +626,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                     eS.set(index);
                                 }
 
-                                System.out.println("\t\t\t\t\te_S: "+ eS);
+//                                System.out.println("\t\t\t\t\te_S: "+ eS);
 
 
 
@@ -651,11 +651,11 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                     epsilonCeVarMap.put(new Pair<>(ciActionClone, eS), epsilonCeVarMap.size());
                                 }
 
-                                System.out.println("\t\t\t\t\t\t\tη(c,e_S): \t\t\t\t\tη("+ ciActionClone + "," + eS + ")");
-                                System.out.println("\t\t\t\t\t\t\t(c_{-S}, e_S): \t\t\t\t" + ciAction);
-                                System.out.println("\t\t\t\t\t\t\t(c_{-S ∪ {i}}, e_S ∪ {i}): \t" + eiAction);
-                                System.out.println(ciAction + " " + utilities.get(ciAction).get(currentPlayerIndex));
-                                System.out.println(eiAction + " " + utilities.get(eiAction).get(currentPlayerIndex));
+//                                System.out.println("\t\t\t\t\t\t\tη(c,e_S): \t\t\t\t\tη("+ ciActionClone + "," + eS + ")");
+//                                System.out.println("\t\t\t\t\t\t\t(c_{-S}, e_S): \t\t\t\t" + ciAction);
+//                                System.out.println("\t\t\t\t\t\t\t(c_{-S ∪ {i}}, e_S ∪ {i}): \t" + eiAction);
+//                                System.out.println(ciAction + " " + utilities.get(ciAction).get(currentPlayerIndex));
+//                                System.out.println(eiAction + " " + utilities.get(eiAction).get(currentPlayerIndex));
 
                                 GRBVar currentVar = vars[epsilonCeVarMap.get(new Pair<>(ciActionClone, eS))];
 
@@ -670,16 +670,16 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                 // lower priority objective: maximise payoff of player i
                                 payoff_vars.get(currentPlayerIndex).addTerm(utilities.get(ciAction).get(currentPlayerIndex), currentVar);
 
-                                System.out.println("------------------------------------------------------");
-                                System.out.println(expr);
-                                System.out.println("------------------------------------------------------");
-                                System.out.println(epsilonCeVarMap);
+//                                System.out.println("------------------------------------------------------");
+//                                System.out.println(expr);
+//                                System.out.println("------------------------------------------------------");
+//                                System.out.println(epsilonCeVarMap);
                             }
                         }
                     }
-                    System.out.println("Intermediate expr: -----------------------------------");
-                    System.out.println(expr);
-                    System.out.println("------------------------------------------------------");
+//                    System.out.println("Intermediate expr: -----------------------------------");
+//                    System.out.println(expr);
+//                    System.out.println("------------------------------------------------------");
                     model.addConstr(expr, GRB.GREATER_EQUAL, 0.0, "CEconstraint" + currentPlayerIndex + "_" + actionIndex + "_" + deviationIndex);
                     model.update();
                 }
@@ -750,7 +750,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
                             stringSum.append(" (").append(jointOutcome).append(", ").append(eSi).append(") +");
 
-                            System.out.println("IMPL: " + jointOutcome + ", " + eS + " > 0 => " + jointOutcome + ", " + eSi + " > 0");
+//                            System.out.println("IMPL: " + jointOutcome + ", " + eS + " > 0 => " + jointOutcome + ", " + eSi + " > 0");
 
                             // Constraint 2.4: if η(c,e_S) > 0 then η(c,e_S u {i}) > 0
 //                            // introducing new binary variable y indicating if η(c,e_S) > 0
@@ -777,12 +777,12 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                             GRBLinExpr expr = new GRBLinExpr();
 //                            expr.addConstant(1.0);
                             expr.addTerm(10e-4, y);
-                            model.addConstr(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))], GRB.LESS_EQUAL, expr, "RHSconstraint(2.4)");
+                            model.addConstr(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))], GRB.GREATER_EQUAL, expr, "RHSconstraint(2.4)");
                             model.update();
                         }
 
 
-                        System.out.println("SUM: epsilon * (" + jointOutcome + ", " + eS + ") >=  (1-epsilon) * " + stringSum);
+//                        System.out.println("SUM: epsilon * (" + jointOutcome + ", " + eS + ") >=  (1-epsilon) * " + stringSum);
 
 
                         // Add the constraint to the model
@@ -843,26 +843,26 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
         // helper print statement to see which variable corresponds to which joint outcome
         for (int i = 0; i < epsilonCeVarMap.size(); i++) {
-            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
+//            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
         }
 
         int status = model.get(GRB.IntAttr.Status);
 
         if (status == GRB.Status.OPTIMAL) {
-            System.out.println("Found optimal solution!");
+//            System.out.println("Found optimal solution!");
             HashMap<BitSet, Double> robustStrategy = new HashMap<>();
 
             for (int i = 0; i < vars.length; i++) {
-                System.out.println("Value of var[" + i + "]: " + vars[i].get(GRB.DoubleAttr.X));
+//                System.out.println("Value of var[" + i + "]: " + vars[i].get(GRB.DoubleAttr.X));
             }
 
             double[] payoffs = new double[n_coalitions];
             Arrays.fill(payoffs, 0.0);
 
             // iterating over all joint outcomes
-            for (BitSet c: utilities.keySet()) {
+            for (BitSet c: ce_var_map.keySet()) {
                 // printing reward
-                System.out.println(c + " " + utilities.get(c));
+//                System.out.println(c + " " + utilities.get(c));
 
                 ArrayList<Integer> cVars = getValuesWithMatchingFirstBitSet(epsilonCeVarMap, c);
 
@@ -878,9 +878,9 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
             System.out.println("robust strategy: " + robustStrategy);
             System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
-            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
+//            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
             for (int i = 0; i < n_coalitions; i++) {
-                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
+//                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
             }
 
 
@@ -896,9 +896,6 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         // pretty print the model
         model.write("model.lp");
 
-        System.out.println("------------------------------------------------------");
-        System.out.println("------------------------------------------------------");
-        System.out.println("------------------------------------------------------");
         return result;
     }
 
@@ -952,7 +949,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
 
         try {
-            return computeRobustCorrelatedEquilibrium(utilities, ce_constraints, strategies);
+            return computeRobustCorrelatedEquilibrium(utilities, ce_constraints, strategies, ce_var_map, type);
         } catch (GRBException e) {
             throw new RuntimeException(e);
         }
