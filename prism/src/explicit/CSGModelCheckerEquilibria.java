@@ -1617,9 +1617,6 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 						}
 					}
 					equilibrium = stepEquilibriaTwoPlayer(csg, rewards, mapping, singleStrategies, solution, s, eqType, crit, withRewards, min);
-					System.out.println("##############");
-					System.out.println(strategies);
-					System.out.println("##############");
 					values[0][s] = equilibrium[1];
 					values[1][s] = equilibrium[2];
 
@@ -1689,13 +1686,15 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 //				System.out.println(mappingHistory);
 				// calculate epsilon for all states of local strategy
-				System.out.println("Strategy synthesis complete. Starting epsilon calculation...");
+				System.out.println("Strategy synthesis complete. Starting epsilon calculation for all states...");
 
 
 				ArrayList<Double> epsilonValues = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
+				ArrayList<HashMap<BitSet, Double>> nonRobustStrategy = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
+				ArrayList<ArrayList<Distribution<Double>>> robustStrategy = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
 
 				for (int state = 0; state < localStrategies.get(0).get(0).size(); state++) {
-					System.out.println("\tState " + state + ": " + csg.getStatesList().get(state));
+//					System.out.println("\tState " + state + ": " + csg.getStatesList().get(state));
 					for (int player = 0; player < localStrategies.size(); player++) {
 						// Iterate over each player within the coalition
 						for (int iteration = 0; iteration < localStrategies.get(player).size(); iteration++) {
@@ -1708,12 +1707,12 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 								for (Map.Entry<BitSet, Double> action : strategy.entrySet()) {
 									BitSet bitSetKey = action.getKey();
 									Double prop = action.getValue();
-									System.out.println("\t\t\tutilities: " + utilitiesHistory.get(state));
 									List<Map<Integer, BitSet>> currentMapping = mappingHistory.get(state);
-									System.out.println("\t\t\tJoint Action " + bitSetKey + " : " + prop);
-									System.out.println("\t\t\tMapping: " + currentMapping);
-									System.out.println("\t\t\tStrategies0: " + strategyHistory.get(state).get(0));
-									System.out.println("\t\t\tStrategies1: " + strategyHistory.get(state).get(1));
+//									System.out.println("\t\t\tutilities: " + utilitiesHistory.get(state));
+//									System.out.println("\t\t\tJoint Action " + bitSetKey + " : " + prop);
+//									System.out.println("\t\t\tMapping: " + currentMapping);
+//									System.out.println("\t\t\tStrategies0: " + strategyHistory.get(state).get(0));
+//									System.out.println("\t\t\tStrategies1: " + strategyHistory.get(state).get(1));
 
 									// what was previously strategies is now strategyHistory.get(state)
 
@@ -1747,9 +1746,9 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 								}
 
 								try {
-									System.out.println("\t\t\tstrategy to check: " + strategyToCheck);
+//									System.out.println("\t\t\tstrategy to check: " + strategyToCheck);
 									if (strategyHistory.get(state).get(0).size() == 1 || strategyHistory.get(state).get(1).size() == 1) {
-										System.out.println("\t\t\tNo constraints");
+//										System.out.println("\t\t\tNo constraints");
 //										epsilonValues.add(null);
 										continue;
 									}
@@ -1759,17 +1758,14 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 
 
-									System.out.println("\t\t\tepsilon: " + epsilon);
+//									System.out.println("\t\t\tepsilon: " + epsilon);
 
-//									CSGCorrelatedRobustGurobi robustGurobi1 = new CSGCorrelatedRobustGurobi(utilities.size(), coalitions.size());
-//									EquilibriumResult robustStrat = robustGurobi1.computeRobustCorrelatedEquilibrium(utilities, ceConstraints, strategies, ceVarMap, eqType);
+									CSGRobustCorrelatedZ3 robustZ3 = new CSGRobustCorrelatedZ3(utilitiesHistory.get(state).size(), coalitions.size());
+									EquilibriumResult robustStrat = robustZ3.computeEquilibrium(utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
 
-
-//									epsilonValues.add(epsilon);
-//									while (epsilonValues.size() <= state) {
-//										epsilonValues.add(null);
-//									}
 									epsilonValues.set(state, epsilon);
+									nonRobustStrategy.set(state, strategyToCheck);
+									robustStrategy.set(state, robustStrat.getStrategy());
 								} catch (GRBException e) {
 									System.out.println(e.getMessage());
 								}
@@ -1780,9 +1776,18 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 					}
 				}
 
-				System.out.println("#######################################");
-				System.out.println("Epsilon values: " + epsilonValues);
-				System.out.println(epsilonValues.size());
+				System.out.println("Iterating through all states...");
+
+				for (int stateIndex = 0; stateIndex < epsilonValues.size(); stateIndex++) {
+					if (epsilonValues.get(stateIndex) == null) {
+						continue;
+					}
+					System.out.println("State " + stateIndex + ": " + csg.getStatesList().get(stateIndex));
+					System.out.println("\tEpsilon: " + epsilonValues.get(stateIndex));
+					System.out.println("\tNon-robust strategy: " + nonRobustStrategy.get(stateIndex));
+					System.out.println("\tRobust strategy: " + robustStrategy.get(stateIndex));
+					System.out.println("\tVarMap: "+ ceVarMapHistory.get(stateIndex));
+				}
 
 //
 				// print strategies

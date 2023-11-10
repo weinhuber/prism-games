@@ -522,7 +522,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
     }
 
 
-        // Acceptable Correlated Equilibria Gurobi
+    // Acceptable Correlated Equilibria Gurobi
     public EquilibriumResult computeRobustCorrelatedEquilibrium(HashMap<BitSet, ArrayList<Double>> utilities,
                                                                 ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
                                                                 ArrayList<ArrayList<Integer>> strategies, HashMap<BitSet, Integer> ce_var_map, int crit) throws GRBException {
