@@ -26,10 +26,7 @@
 
 package explicit;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.HashMap;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -137,7 +134,18 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         return null;
     }
 
-    public double computeRobustness(HashMap<BitSet, Double> strategy, HashMap<BitSet, ArrayList<Double>> utilities,
+    /**
+     * Computes the robustness of a given Strategy
+     * @param strategy
+     * @param utilities
+     * @param ce_constraints
+     * @param strategies
+     * @param ce_var_map
+     * @param crit
+     * @return
+     * @throws GRBException
+     */
+    public EquilibriumRobustnessResult computeRobustness(HashMap<BitSet, Double> strategy, HashMap<BitSet, ArrayList<Double>> utilities,
                                     ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
                                     ArrayList<ArrayList<Integer>> strategies, HashMap<BitSet, Integer> ce_var_map, int crit) throws GRBException {
 
@@ -460,65 +468,65 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
         model.optimize();
 
-        // helper print statement to see which variable corresponds to which joint outcome
-        for (int i = 0; i < epsilonCeVarMap.size(); i++) {
-//            System.out.println(i + " " + getPairFromValue(epsilonCeVarMap, i));
-        }
 
         int status = model.get(GRB.IntAttr.Status);
+
 
         if (status == GRB.Status.OPTIMAL) {
 //            System.out.println("Found optimal solution!");
             HashMap<BitSet, Double> robustStrategy = new HashMap<>();
 
+            HashMap<Pair<BitSet, BitSet>, Double> robustnessResultTrembles = new HashMap<>();
+
             for (int i = 0; i < vars.length; i++) {
-//                System.out.println("Value of var[" + i + "]: " + vars[i].get(GRB.DoubleAttr.X));
-            }
-
-            double[] payoffs = new double[n_coalitions];
-            Arrays.fill(payoffs, 0.0);
-
-            // iterating over all joint outcomes
-            for (BitSet c: ce_var_map.keySet()) {
-                // printing reward
-//                System.out.println(c + " " + utilities.get(c));
-
-                ArrayList<Integer> cVars = getValuesWithMatchingFirstBitSet(epsilonCeVarMap, c);
-
-                double prop = 0.0;
-                for (Integer cVar: cVars) {
-                    prop += vars[cVar].get(GRB.DoubleAttr.X);
+                double tmpProp = vars[i].get(GRB.DoubleAttr.X);
+                if (tmpProp > 0 ){
+                    robustnessResultTrembles.put(getPairFromValue(epsilonCeVarMap, i), tmpProp);
                 }
-                robustStrategy.put(c, prop);
-                for (int i = 0; i < n_coalitions; i++) {
-                    payoffs[i] += utilities.get(c).get(i) * prop;
-                }
-            }
 
-//            System.out.println("robust strategy: " + robustStrategy);
-//            System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
-//            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
-            for (int i = 0; i < n_coalitions; i++) {
-//                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
-            }
+//                System.out.println(getPairFromValue(epsilonCeVarMap, i) + " --> " + tmpProp);
 
+            }
+            return new EquilibriumRobustnessResult(epsilon.get(GRB.DoubleAttr.X), robustnessResultTrembles);
+
+//            double[] payoffs = new double[n_coalitions];
+//            Arrays.fill(payoffs, 0.0);
+//
+//            // iterating over all joint outcomes
+//            for (BitSet c: ce_var_map.keySet()) {
+//                // printing reward
+////                System.out.println(c + " " + utilities.get(c));
+//
+//                ArrayList<Integer> cVars = getValuesWithMatchingFirstBitSet(epsilonCeVarMap, c);
+//
+//                double prop = 0.0;
+//                for (Integer cVar: cVars) {
+//                    prop += vars[cVar].get(GRB.DoubleAttr.X);
+//                }
+//                robustStrategy.put(c, prop);
+//                for (int i = 0; i < n_coalitions; i++) {
+//                    payoffs[i] += utilities.get(c).get(i) * prop;
+//                }
+//            }
+//
+////            System.out.println("robust strategy: " + robustStrategy);
+////            System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
+////            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
+//            for (int i = 0; i < n_coalitions; i++) {
+////                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
+//            }
+//
 
         } else if (status == GRB.Status.INFEASIBLE) {
 //            System.out.println("Model is infeasible");
             // To diagnose the infeasibilities, you might consider calculating an Irreducible Infeasible Set (IIS)
             model.computeIIS();
             model.write("model.ilp");
-            return -1;
+            return null;
         } else {
 //            System.out.println("Optimization finished with status " + status);
-            return -1;
+            return null;
         }
-
-        // pretty print the model
-        model.write("model.lp");
-
-
-        return epsilon.get(GRB.DoubleAttr.X);
     }
 
 
@@ -527,7 +535,11 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                                                                 ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
                                                                 ArrayList<ArrayList<Integer>> strategies, HashMap<BitSet, Integer> ce_var_map, int crit) throws GRBException {
 
+//        System.out.println(utilities);
         EquilibriumResult result = new EquilibriumResult();
+        Distribution<Double> d = new Distribution<>();
+        ArrayList<Double> payoffs_result = new ArrayList<Double>();
+        ArrayList<Distribution<Double>> strategy_result = new ArrayList<>();
 
         // previously we had a map from joint actions to variables HashMap<BitSet, Integer>
         // now we need a tuple of joint action and trembling action to integer HashMap<Pair<BitSet, BitSet>, Integer>
@@ -722,6 +734,11 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
                         // ϵ * η(c,e_S)
                         GRBQuadExpr lhs = new GRBQuadExpr();
+
+                        if (!epsilonCeVarMap.containsKey(new Pair<>(jointOutcome, eS))) {
+                            // if we discovered a new variable, add it to the list
+                            epsilonCeVarMap.put(new Pair<>(jointOutcome, eS), epsilonCeVarMap.size());
+                        }
                         lhs.addTerm(1.0, epsilon, vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eS))]);
 
                         // (1-ϵ) * sum
@@ -856,8 +873,8 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 //                System.out.println("Value of var[" + i + "]: " + vars[i].get(GRB.DoubleAttr.X));
             }
 
-            double[] payoffs = new double[n_coalitions];
-            Arrays.fill(payoffs, 0.0);
+            double[] strat_payoffs = new double[n_coalitions];
+            Arrays.fill(strat_payoffs, 0.0);
 
             // iterating over all joint outcomes
             for (BitSet c: ce_var_map.keySet()) {
@@ -870,19 +887,26 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                 for (Integer cVar: cVars) {
                     prop += vars[cVar].get(GRB.DoubleAttr.X);
                 }
+                d.add(ce_var_map.get(c), prop);
                 robustStrategy.put(c, prop);
                 for (int i = 0; i < n_coalitions; i++) {
-                    payoffs[i] += utilities.get(c).get(i) * prop;
+                    strat_payoffs[i] += utilities.get(c).get(i) * prop;
                 }
             }
 
-            System.out.println("robust strategy: " + robustStrategy);
-            System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
-//            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
-            for (int i = 0; i < n_coalitions; i++) {
-//                System.out.println("\t- coalition " + i + ": " + payoffs[i]);
+            // typecast payoff to payoff_result
+            for (double payoff : strat_payoffs) {
+                payoffs_result.add(payoff);
             }
 
+//            System.out.println("robust strategy: " + robustStrategy);
+//            System.out.println("epsilon: " + epsilon.get(GRB.DoubleAttr.X));
+//            System.out.println("total reward: "+ Arrays.stream(payoffs).sum());
+
+            result.setStatus(CSGModelCheckerEquilibria.CSGResultStatus.SAT);
+            result.setPayoffVector(payoffs_result);
+            strategy_result.add(d);
+            result.setStrategy(strategy_result);
 
         } else if (status == GRB.Status.INFEASIBLE) {
             System.out.println("Model is infeasible");
@@ -894,7 +918,8 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         }
 
         // pretty print the model
-        model.write("model.lp");
+//        model.write("model.lp");
+        model.reset();
 
         return result;
     }

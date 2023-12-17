@@ -45,6 +45,9 @@ import prism.PrismSettings;
 import prism.PrismUtils;
 import strat.CSGStrategy;
 import strat.CSGStrategy.CSGStrategyType;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 
 public class CSGModelCheckerEquilibria extends CSGModelChecker
 {
@@ -151,9 +154,19 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 //				switch (lpSolver) {
 //					case "Z3":
 						ceSolver = new CSGCorrelatedZ3(maxRows * maxCols, numCoalitions);
-						name = ceSolver.getSolverName();
+				mainLog.println("using regular z3...");
 
-						epsilonSolver = new CSGRobustCorrelatedZ3(maxRows * maxCols, numCoalitions);
+//				try {
+//					ceSolver = new CSGCorrelatedRobustGurobi(maxRows * maxCols, numCoalitions);
+//				System.out.println("Using robust gurobi");
+//
+//				} catch (GRBException e) {
+//					throw new RuntimeException(e);
+//				}
+
+//				ceSolver = new CSGRobustCorrelatedZ3(maxRows * maxCols, numCoalitions);
+//				System.out.println("Using robust Z3");
+				name = ceSolver.getSolverName();
 //						break;
 //					default: throw new PrismException("Unsupported solver for correlated equilibria computation");
 //				}
@@ -1622,13 +1635,29 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 					// Store generated strategies based on the equilibrium type
 					if (genStrat) {
+						List<Map<Integer, BitSet>> copyMapping = new ArrayList<Map<Integer, BitSet>>(mapping);
+						ArrayList<ArrayList<Integer>> copyStrategy = new ArrayList<ArrayList<Integer>>(strategies);
+						HashMap<BitSet, ArrayList<Double>> copyUtilities = new HashMap<>(utilities);
+						ArrayList<ArrayList<HashMap<BitSet, Double>>> copyCEConstraints = new ArrayList<ArrayList<HashMap<BitSet, Double>>>(ceConstraints);
+						HashMap<BitSet, Integer> copyCEVarMap = new HashMap<>(ceVarMap);
+
+						while (mappingHistory.size() <= s) {
+							mappingHistory.add(null);
+							strategyHistory.add(null);
+							utilitiesHistory.add(null);
+							ceVarMapHistory.add(null);
+							ceConstraintsHistory.add(null);
+						}
+
+						mappingHistory.set(s, copyMapping);
+						strategyHistory.set(s, copyStrategy);
+						utilitiesHistory.set(s, copyUtilities);
+						ceVarMapHistory.set(s, copyCEVarMap);
+						ceConstraintsHistory.set(s, copyCEConstraints);
+
 						switch (eqType) {
 							case CORR: {
-								List<Map<Integer, BitSet>> copyMapping = new ArrayList<Map<Integer, BitSet>>(mapping);
-								ArrayList<ArrayList<Integer>> copyStrategy = new ArrayList<ArrayList<Integer>>(strategies);
-								HashMap<BitSet, ArrayList<Double>> copyUtilities = new HashMap<>(utilities);
-								ArrayList<ArrayList<HashMap<BitSet, Double>>> copyCEConstraints = new ArrayList<ArrayList<HashMap<BitSet, Double>>>(ceConstraints);
-								HashMap<BitSet, Integer> copyCEVarMap = new HashMap<>(ceVarMap);
+
 
 								if (localStrategies.get(0).get(0).get(s) == null) {
 									localStrategies.get(0).get(0).set(s, singleStrategies.get(0).get(0));
@@ -1636,18 +1665,6 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 									localStrategies.get(0).get(0).set(s, singleStrategies.get(0).get(0));
 								}
 
-								while (mappingHistory.size() <= s) {
-									mappingHistory.add(null);
-									strategyHistory.add(null);
-									utilitiesHistory.add(null);
-									ceVarMapHistory.add(null);
-									ceConstraintsHistory.add(null);
-								}
-								mappingHistory.set(s, copyMapping);
-								strategyHistory.set(s, copyStrategy);
-								utilitiesHistory.set(s, copyUtilities);
-								ceVarMapHistory.set(s, copyCEVarMap);
-								ceConstraintsHistory.set(s, copyCEConstraints);
 
 								break;
 							}
@@ -1673,6 +1690,8 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 				rewardsArray[s] = solution[0][s] + solution[1][s];
 			}
 
+
+
 			done = PrismUtils.doublesAreClose(solution[0], temporary[0], termCritParam, termCrit == TermCrit.ABSOLUTE);
 			done = done & PrismUtils.doublesAreClose(solution[1], temporary[1], termCritParam, termCrit == TermCrit.ABSOLUTE);
 
@@ -1686,107 +1705,134 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 //				System.out.println(mappingHistory);
 				// calculate epsilon for all states of local strategy
-				System.out.println("Strategy synthesis complete. Starting epsilon calculation for all states...");
+				if (false && genStrat) {
+					mainLog.println("Strategy synthesis complete. Starting epsilon calculation for all states...");
+
+					SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
+					Date currentDate = new Date();
+					String dateString = formatter.format(currentDate);
+					mainLog.println(dateString);
+
+					ArrayList<Double> epsilonValues = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
+					ArrayList<HashMap<BitSet, Double>> nonRobustStrategy = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
+					ArrayList<ArrayList<Distribution<Double>>> robustStrategy = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
+					ArrayList<HashMap<Pair<BitSet, BitSet>, Double>> trembles = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
 
 
-				ArrayList<Double> epsilonValues = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
-				ArrayList<HashMap<BitSet, Double>> nonRobustStrategy = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
-				ArrayList<ArrayList<Distribution<Double>>> robustStrategy = new ArrayList<>(Collections.nCopies(localStrategies.get(0).get(0).size(), null));
-
-				for (int state = 0; state < localStrategies.get(0).get(0).size(); state++) {
+					for (int state = 0; state < localStrategies.get(0).get(0).size(); state++) {
 //					System.out.println("\tState " + state + ": " + csg.getStatesList().get(state));
-					for (int player = 0; player < localStrategies.size(); player++) {
-						// Iterate over each player within the coalition
-						for (int iteration = 0; iteration < localStrategies.get(player).size(); iteration++) {
-							Map<BitSet, Double> strategy = localStrategies.get(player).get(iteration).get(state);
-							if (strategy != null) {
+						for (int player = 0; player < localStrategies.size(); player++) {
+							// Iterate over each player within the coalition
+							for (int iteration = 0; iteration < localStrategies.get(player).size(); iteration++) {
+								Map<BitSet, Double> strategy = localStrategies.get(player).get(iteration).get(state);
+								if (strategy != null) {
 //								System.out.println("\t\tPlayer " + player + ", Iteration " + iteration + ":");
 
-								HashMap<BitSet, Double> strategyToCheck = new HashMap<>();
-								// Iterate over each action within the strategy
-								for (Map.Entry<BitSet, Double> action : strategy.entrySet()) {
-									BitSet bitSetKey = action.getKey();
-									Double prop = action.getValue();
-									List<Map<Integer, BitSet>> currentMapping = mappingHistory.get(state);
+									HashMap<BitSet, Double> strategyToCheck = new HashMap<>();
+									// Iterate over each action within the strategy
+									for (Map.Entry<BitSet, Double> action : strategy.entrySet()) {
+										BitSet bitSetKey = action.getKey();
+										Double prop = action.getValue();
+										List<Map<Integer, BitSet>> currentMapping = mappingHistory.get(state);
 //									System.out.println("\t\t\tutilities: " + utilitiesHistory.get(state));
 //									System.out.println("\t\t\tJoint Action " + bitSetKey + " : " + prop);
 //									System.out.println("\t\t\tMapping: " + currentMapping);
 //									System.out.println("\t\t\tStrategies0: " + strategyHistory.get(state).get(0));
 //									System.out.println("\t\t\tStrategies1: " + strategyHistory.get(state).get(1));
 
-									// what was previously strategies is now strategyHistory.get(state)
+										// what was previously strategies is now strategyHistory.get(state)
 
 
+										BitSet jointAction = new BitSet();
+										// mapping of bitset to joint action
+										// player 0
+										BitSet player0action = (BitSet) actionIndexes[0].clone();
+										player0action.and(bitSetKey);
 
-									BitSet jointAction = new BitSet();
-									// mapping of bitset to joint action
-									// player 0
-									BitSet player0action = (BitSet) actionIndexes[0].clone();
-									player0action.and(bitSetKey);
-									int actionIndex = getKeyForBitSet(currentMapping.get(0), player0action);
 
-									try {
-										jointAction.set(strategyHistory.get(state).get(0).get(actionIndex));
-									} catch (Exception e) {
-										continue;
+										try {
+											int actionIndex = getKeyForBitSet(currentMapping.get(0), player0action);
+											jointAction.set(strategyHistory.get(state).get(0).get(actionIndex));
+										} catch (Exception e) {
+											continue;
+										}
+
+										// player 1
+										BitSet player1action = (BitSet) actionIndexes[1].clone();
+										player1action.and(bitSetKey);
+
+										try {
+											int actionIndex = getKeyForBitSet(currentMapping.get(1), player1action);
+											jointAction.set(strategyHistory.get(state).get(1).get(actionIndex));
+										} catch (Exception e) {
+											continue;
+										}
+
+
+										strategyToCheck.put(jointAction, prop);
 									}
 
-									// player 1
-									BitSet player1action = (BitSet) actionIndexes[1].clone();
-									player1action.and(bitSetKey);
-									actionIndex = getKeyForBitSet(currentMapping.get(1), player1action);
 									try {
-										jointAction.set(strategyHistory.get(state).get(1).get(actionIndex));
-									} catch (Exception e) {
-										continue;
-									}
-
-
-									strategyToCheck.put(jointAction, prop);
-								}
-
-								try {
 //									System.out.println("\t\t\tstrategy to check: " + strategyToCheck);
-									if (strategyHistory.get(state).get(0).size() == 1 || strategyHistory.get(state).get(1).size() == 1) {
+										if (strategyHistory.get(state).get(0).size() == 1 || strategyHistory.get(state).get(1).size() == 1) {
 //										System.out.println("\t\t\tNo constraints");
 //										epsilonValues.add(null);
-										continue;
-									}
-									CSGCorrelatedRobustGurobi robustGurobi = new CSGCorrelatedRobustGurobi(utilitiesHistory.get(state).size(), coalitions.size());
-									double epsilon = robustGurobi.computeRobustness(strategyToCheck, utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
-
-
+											continue;
+										}
+										CSGCorrelatedRobustGurobi robustGurobi = new CSGCorrelatedRobustGurobi(utilitiesHistory.get(state).size(), coalitions.size());
+										EquilibriumRobustnessResult robustnessResult = robustGurobi.computeRobustness(strategyToCheck, utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
 
 
 //									System.out.println("\t\t\tepsilon: " + epsilon);
 
-									CSGRobustCorrelatedZ3 robustZ3 = new CSGRobustCorrelatedZ3(utilitiesHistory.get(state).size(), coalitions.size());
-									EquilibriumResult robustStrat = robustZ3.computeEquilibrium(utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
+										CSGRobustCorrelatedZ3 robustZ3 = new CSGRobustCorrelatedZ3(utilitiesHistory.get(state).size(), coalitions.size());
+										EquilibriumResult robustStrat = robustZ3.computeEquilibrium(utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
 
-									epsilonValues.set(state, epsilon);
-									nonRobustStrategy.set(state, strategyToCheck);
-									robustStrategy.set(state, robustStrat.getStrategy());
-								} catch (GRBException e) {
-									System.out.println(e.getMessage());
-								}
-							} else {
+										epsilonValues.set(state, robustnessResult.getEpsilon());
+										nonRobustStrategy.set(state, strategyToCheck);
+										robustStrategy.set(state, robustStrat.getStrategy());
+										trembles.set(state, robustnessResult.getTrembles());
+
+									} catch (GRBException e) {
+										System.out.println(e.getMessage());
+									}
+								} else {
 //								System.out.println("\t\t\tPlayer " + player + ", Iteration " + iteration + ": No strategy.");
+								}
 							}
 						}
 					}
-				}
 
-				System.out.println("Iterating through all states...");
 
-				for (int stateIndex = 0; stateIndex < epsilonValues.size(); stateIndex++) {
-					if (epsilonValues.get(stateIndex) == null) {
-						continue;
+					mainLog.println("Iterating through all states...");
+
+					for (int stateIndex = 0; stateIndex < epsilonValues.size(); stateIndex++) {
+						if (epsilonValues.get(stateIndex) == null) {
+							continue;
+						}
+						mainLog.println("State " + stateIndex + ": " + csg.getStatesList().get(stateIndex));
+						mainLog.println("\tEpsilon: " + epsilonValues.get(stateIndex));
+						mainLog.println("\tNon-robust strategy: " + nonRobustStrategy.get(stateIndex));
+						mainLog.println("\t\tTrembles the non-robust strategy is robust against:");
+						HashMap<Pair<BitSet, BitSet>, Double> stateTremble = trembles.get(stateIndex);
+						for (Pair<BitSet, BitSet> singleTremble : stateTremble.keySet()) {
+							mainLog.println("\t\t\t" + singleTremble + ": " + stateTremble.get(singleTremble));
+						}
+						mainLog.println("\tRobust strategy: " + robustStrategy.get(stateIndex));
+
+						mainLog.println("\tVarMap: " + ceVarMapHistory.get(stateIndex));
+						mainLog.println("\tUtilities: " + utilitiesHistory.get(stateIndex));
+//						System.out.println("\tMapping: " + mappingHistory.get(stateIndex));
+//						System.out.println("\tStrategies: " + strategyHistory.get(stateIndex));
+//						System.out.println("\tNon-Robust Action Player 0: " + csg.getAvailableActions(stateIndex));
+//						System.out.println(csg.getIndexes()[stateIndex]);
+						mainLog.println("\tOutcome 0: " + csg.getAction(stateIndex,0));
+						mainLog.println("\tOutcome 1: " + csg.getAction(stateIndex,1));
+						mainLog.println("\tOutcome 2: " + csg.getAction(stateIndex,2));
+						mainLog.println("\tOutcome 3: " + csg.getAction(stateIndex,3));
+						mainLog.println("\tAll Available Actions: " + csg.getAvailableActions(stateIndex));
+
 					}
-					System.out.println("State " + stateIndex + ": " + csg.getStatesList().get(stateIndex));
-					System.out.println("\tEpsilon: " + epsilonValues.get(stateIndex));
-					System.out.println("\tNon-robust strategy: " + nonRobustStrategy.get(stateIndex));
-					System.out.println("\tRobust strategy: " + robustStrategy.get(stateIndex));
-					System.out.println("\tVarMap: "+ ceVarMapHistory.get(stateIndex));
 				}
 
 //
