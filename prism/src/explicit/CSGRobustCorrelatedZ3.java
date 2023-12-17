@@ -131,6 +131,7 @@ public class CSGRobustCorrelatedZ3 implements CSGCorrelated {
                                                 ArrayList<ArrayList<HashMap<BitSet, Double>>> ce_constraints,
                                                 ArrayList<ArrayList<Integer>> strategies, HashMap<BitSet, Integer> ce_var_map, int crit) {
 
+//        System.out.println(utilities);
         EquilibriumResult result = new EquilibriumResult();
         Distribution<Double> d = new Distribution<>();
         ArrayList<Double> payoffs_result = new ArrayList<Double>();
@@ -497,9 +498,11 @@ public class CSGRobustCorrelatedZ3 implements CSGCorrelated {
 //            System.out.println("Found optimal solution!");
             HashMap<BitSet, Double> robustStrategy = new HashMap<>();
 
-            for (int i = 0; i < vars.length; i++) {
-//                System.out.println("Value of var[" + i + "]: " + getDoubleValue(model, vars[i]));
-            }
+//            for (int i = 0; i < vars.length; i++) {
+//                if (getDoubleValue(model, vars[i]) > 0) {
+//                    System.out.println(getPairFromValue(epsilonCeVarMap, i) + " " + getDoubleValue(model, vars[i]));
+//                }
+//            }
 
             double[] strat_payoffs = new double[n_coalitions];
             Arrays.fill(strat_payoffs, 0.0);
