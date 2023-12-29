@@ -1182,6 +1182,269 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 		return res;
 	}
 
+
+	/**
+	 * Deal with multi-player infinite-horizon equilibria (unfinished).
+	 *
+	 * @param csg
+	 * @param coalitions
+	 * @param rewards
+	 * @param targets
+	 * @param remain
+	 * @param eqType
+	 * @param crit
+	 * @param min
+	 * @return
+	 * @throws PrismException
+	 */
+	public ModelCheckerResult computeMultiReachEquilibria(CSG csg, List<Coalition> coalitions, List<CSGRewards<Double>> rewards, BitSet[] targets, BitSet[] remain, int eqType, int crit, boolean min) throws PrismException {
+		ModelCheckerResult res = new ModelCheckerResult();
+		Map<BitSet, ModelCheckerResultMulti> precomp;
+		Map<Integer, Set<BitSet>> subgames = new HashMap<Integer, Set<BitSet>>();
+		BitSet tmp;
+		double[][] sol;
+		double[] r;
+		int c, s;
+		boolean rew;
+
+		rew = rewards != null;
+		precomp = new HashMap<BitSet, ModelCheckerResultMulti>();
+
+		buildCoalitions(csg, coalitions);
+		dominated = new BitSet[numCoalitions];
+		dominating = new BitSet[numCoalitions];
+		findMaxAvgAct(csg);
+
+		for (c = 1; c < coalitions.size(); c++) {
+			subgames.put(c, new HashSet<BitSet>());
+		}
+
+		for (c = 0; c < coalitions.size(); c++) {
+			tmp = (BitSet) players.clone();
+			tmp.clear(c);
+			buildSubGames(subgames, tmp, c);
+		}
+
+		smtSupportEnumeration = new CSGSupportEnumerationZ3(maxNumActions, numCoalitions);
+		smtSupportEnumeration.setIndexes(strategies);
+		smtSupportEnumeration.setNumPlayers(numCoalitions);
+		smtSupportEnumeration.init();
+
+		for (c = numCoalitions; c > 0; c--) {
+			if (c == numCoalitions) {
+				tmp = new BitSet();
+				tmp.set(0, numCoalitions);
+				precomp.put(tmp, zeroModelCheckerResultMulti(numCoalitions, csg.getNumStates()));
+			}
+			else {
+				for (BitSet E : subgames.get(c)) {
+					precomp.put(E, computeMultiReachEquilibriaRewRec(csg, coalitions, rewards, targets, precomp, E, min, true));
+				}
+			}
+		}
+
+
+		sol = computeMultiReachEquilibriaRewRec(csg, coalitions, rewards, targets, precomp, new BitSet(), min, true).solnMulti;
+
+
+		r = new double[csg.getNumStates()];
+		for (s = 0; s < csg.getNumStates(); s++) {
+			r[s] = 0.0;
+			for (c = 0; c < numCoalitions; c++) {
+				r[s] += sol[c][s];
+			}
+		}
+		res.soln = r;
+
+		// print out the coalition results
+		String output = "Coalition results (initial state): (";
+
+		for (int i = 0; i < numCoalitions; i++) {
+			output += sol[i][csg.getFirstInitialState()];
+			if (i < numCoalitions - 1) {
+				output += ",";
+			}
+		}
+		output += ")";
+		mainLog.println(output);
+
+		return res;
+	}
+
+
+
+	/**
+	 * Deal with multi-player infinite-horizon (probabilistic) equilibria (unfinished).
+	 *
+	 * @param csg
+	 * @param coalitions
+	 * @param rewards
+	 * @param targets
+	 * @param subgames
+	 * @param D
+	 * @param min
+	 * @param main
+	 * @return
+	 * @throws PrismException
+	 */
+	public ModelCheckerResultMulti computeMultiReachEquilibriaRewRec(CSG csg, List<Coalition> coalitions, List<CSGRewards<Double>> rewards, BitSet[] targets, Map<BitSet, ModelCheckerResultMulti> subgames, BitSet D, boolean min, boolean main) throws PrismException {
+		ModelCheckerResultMulti res = new ModelCheckerResultMulti();
+		ModelCheckerResultMulti sub;
+		List<List<List<Map<BitSet, Double>>>> lstrat = null;
+		List<List<Map<BitSet, Double>>> sstrat = null;
+		List<Map<Integer, BitSet>> mmap = null;
+		BitSet newD, uniD;
+		double[][] sol = new double[coalitions.size()][csg.getNumStates()];
+		double[][] val = new double[coalitions.size()][csg.getNumStates()];
+		double[][] tmp = new double[coalitions.size()][csg.getNumStates()];
+		double[][] eqs;
+		double[] sel;
+		String sols;
+		int c, i, j, k, s;
+		boolean done;
+
+		if (genStrat) {
+			mmap = new ArrayList<Map<Integer, BitSet>>();
+			sstrat = new ArrayList<List<Map<BitSet, Double>>>();
+			lstrat = new ArrayList<List<List<Map<BitSet, Double>>>>();
+			for (i = 0; i < coalitions.size(); i++) {
+				mmap.add(i, new HashMap<Integer, BitSet>());
+				lstrat.add(i, new ArrayList<List<Map<BitSet, Double>>>());
+				lstrat.get(i).add(0, new ArrayList<Map<BitSet, Double>>());
+				for (j = 0; j < csg.getNumStates(); j++) {
+					lstrat.get(i).get(0).add(j, null);
+				}
+			}
+		}
+		for (c = 0; c < numCoalitions; c++) {
+			Arrays.fill(tmp[c], 0.0);
+			Arrays.fill(val[c], 0.0);
+		}
+
+		done = true;
+		k = 0;
+		while (true) {
+			for (s = 0; s < csg.getNumStates(); s++) {
+				newD = new BitSet();
+				for (c = 0; c < numCoalitions; c++) {
+					if (targets[c].get(s)) {
+						newD.set(c);
+					}
+				}
+				newD.andNot(D);
+				if (D.cardinality() == numCoalitions) {
+					for (c = 0; c < numCoalitions; c++) {
+						val[c][s] = 0.0;
+					}
+				}
+				else if (k == 0) {
+					for (c = 0; c < numCoalitions; c++) {
+						val[c][s] = 0.0;
+					}
+				}
+				else if (!newD.isEmpty()) {
+
+					if (genStrat) {
+						if (res.subGames == null)
+							res.subGames = new HashMap<BitSet, ModelCheckerResultMulti>();
+					}
+					uniD = new BitSet();
+					uniD.or(D);
+					uniD.or(newD);
+
+					sub = subgames.get(uniD);
+					for (c = 0; c < numCoalitions; c++) {
+						val[c][s] = sub.solnMulti[c][s];
+					}
+				}
+				else {
+					if (genStrat) {
+						sstrat = new ArrayList<List<Map<BitSet, Double>>>();
+						for (c = 0; c < coalitions.size(); c++) {
+							mmap.get(c).clear();
+						}
+					}
+					for (c = 0; c < numCoalitions; c++) {
+						if (D.get(c))
+							sol[c][s] = 0.0;
+					}
+					eqs = stepEquilibria(csg, rewards, mmap, sstrat, sol, s, min);
+					sel = swne(eqs, sstrat, min);
+					for (c = 0; c < numCoalitions; c++) {
+						val[c][s] = sel[c + 1];
+					}
+					if (genStrat) {
+						if (main && s==0) {
+							System.out.println(sstrat);
+						}
+						// Doesn't work like this, needs to add memory
+						for (c = 0; c < coalitions.size(); c++) {
+							if (lstrat.get(c).get(0).get(s) == null) {
+								lstrat.get(c).get(0).set(s, sstrat.get(0).get(c));
+							}
+							else if (!lstrat.get(0).get(0).get(s).equals(sstrat.get(0).get(c)) && checkEquilibriumChange(sol, sel, s)) { // will have to change for min
+								lstrat.get(c).get(0).set(s, sstrat.get(0).get(c));
+							}
+						}
+					}
+				}
+			}
+			for (s = 0; s < csg.getNumStates(); s++) {
+				for (c = 0; c < numCoalitions; c++) {
+					sol[c][s] = val[c][s];
+					sol[c][s] += (D.get(c))? 0.0 : ((min)? -1.0 * rewards.get(c).getStateReward(s) : rewards.get(c).getStateReward(s));
+				}
+			}
+			sols = "(";
+			for (c = 0; c < numCoalitions; c++) {
+				if (c < numCoalitions - 1)
+					sols += sol[c][csg.getFirstInitialState()] + ",";
+				else
+					sols += sol[c][csg.getFirstInitialState()] + ")";
+				done = done & PrismUtils.doublesAreClose(sol[c], tmp[c], termCritParam, termCrit == TermCrit.ABSOLUTE);
+			}
+
+			k++;
+			if (done && k > 1) {
+				break;
+			}
+			else if (!done && k == maxIters) {
+				throw new PrismException("Could not converge after " + k + " iterations");
+			}
+			else {
+				done = true;
+				for (c = 0; c < numCoalitions; c++) {
+					tmp[c] = Arrays.copyOf(sol[c], sol[c].length);
+				}
+			}
+		}
+		if (genStrat) {
+			res.D = D;
+			res.strat = new CSGStrategy(csg, lstrat, null, numCoalitions, CSGStrategyType.EQUILIBRIA_M);
+		}
+		res.solnMulti = sol;
+		res.numIters = k;
+
+		return res;
+	}
+
+	/**
+	 *
+	 *
+	 * @param n
+	 * @param s
+	 * @return
+	 */
+	public ModelCheckerResultMulti zeroModelCheckerResultMulti(int n, int s) {
+		ModelCheckerResultMulti res = new ModelCheckerResultMulti();
+		double[][] soln = new double[n][s];
+		for (int i = 0; i < n; i++) {
+			Arrays.fill(soln[i], 0.0);
+		}
+		res.solnMulti = soln;
+		return res;
+	}
+
 	/**
 	 * Deal with multi-player bounded equilibria (unfinished).
 	 *

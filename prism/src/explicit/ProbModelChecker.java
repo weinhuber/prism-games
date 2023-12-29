@@ -837,7 +837,12 @@ public class ProbModelChecker extends NonProbModelChecker
 			}
 		}
 		else if (coalitions.size() > 2) {
-			throw new PrismNotSupportedException("Equilibria-based properties with more than two coalitions are not yet supported");
+			if (unbounded.cardinality() == formulae.size() && rew) {
+					res = ((CSGModelChecker) this).computeMultiRewReachEquilibria((CSG) model, coalitions, rewards, targets, eqType, crit, min);
+				}
+			else {
+				throw new PrismNotSupportedException("Only unbounded equilibria-based properties with reach reward more are currently supported");
+			}
 		}
 
 		result.setStrategy(res.strat);

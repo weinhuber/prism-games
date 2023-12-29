@@ -1160,6 +1160,28 @@ public class CSGModelChecker extends ProbModelChecker
 	}
 
 	/**
+	 * Deal with multi-player reachability rewards formulae
+	 *
+	 * @param csg The CSG
+	 * @param coalitions The list of coalitions
+	 * @param rewards The list of reward structures
+	 * @param targets The list of sets of target states
+	 * @param min Whether we're minimising for the first coalition
+	 * @return
+	 * @throws PrismException
+	 */
+	public ModelCheckerResult computeMultiRewReachEquilibria(CSG csg, List<Coalition> coalitions, List<CSGRewards<Double>> rewards, BitSet[] targets, int eqType, int crit, boolean min)
+			throws PrismException
+	{
+		ModelCheckerResult res = new ModelCheckerResult();
+		CSGModelCheckerEquilibria csgeq = new CSGModelCheckerEquilibria(this);
+		res = csgeq.computeMultiReachEquilibria(csg, coalitions, rewards, targets, null, eqType, crit, min);
+		return res;
+	}
+
+
+
+	/**
 	 * Deal with computing mixed bounded and unbounded equilibria.
 	 * @param csg The CSG
 	 * @param coalitions The list of coalitions
