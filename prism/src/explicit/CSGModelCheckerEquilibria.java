@@ -153,19 +153,19 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 			case CORR:
 //				switch (lpSolver) {
 //					case "Z3":
-						ceSolver = new CSGCorrelatedZ3(maxRows * maxCols, numCoalitions);
+				ceSolver = new CSGCorrelatedZ3(maxRows * maxCols, numCoalitions);
 				mainLog.println("using regular z3...");
 
 //				try {
 //					ceSolver = new CSGCorrelatedRobustGurobi(maxRows * maxCols, numCoalitions);
-//				System.out.println("Using robust gurobi");
+//					mainLog.println("Using robust gurobi");
 //
 //				} catch (GRBException e) {
 //					throw new RuntimeException(e);
 //				}
 
 //				ceSolver = new CSGRobustCorrelatedZ3(maxRows * maxCols, numCoalitions);
-//				System.out.println("Using robust Z3");
+//				mainLog.println("Using robust Z3");
 				name = ceSolver.getSolverName();
 //						break;
 //					default: throw new PrismException("Unsupported solver for correlated equilibria computation");
@@ -1705,7 +1705,11 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 //				System.out.println(mappingHistory);
 				// calculate epsilon for all states of local strategy
-				if (false && genStrat) {
+
+
+				Boolean computeRobustStrat = false;
+
+				if (true && genStrat) {
 					mainLog.println("Strategy synthesis complete. Starting epsilon calculation for all states...");
 
 					SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
@@ -1774,24 +1778,26 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 									try {
 //									System.out.println("\t\t\tstrategy to check: " + strategyToCheck);
-										if (strategyHistory.get(state).get(0).size() == 1 || strategyHistory.get(state).get(1).size() == 1) {
+										if (strategyHistory.get(state).get(0).size() == 1 || strategyHistory.get(state).get(1).size() == 1 || strategyToCheck.isEmpty()) {
 //										System.out.println("\t\t\tNo constraints");
 //										epsilonValues.add(null);
 											continue;
 										}
 										CSGCorrelatedRobustGurobi robustGurobi = new CSGCorrelatedRobustGurobi(utilitiesHistory.get(state).size(), coalitions.size());
 										EquilibriumRobustnessResult robustnessResult = robustGurobi.computeRobustness(strategyToCheck, utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
-
+										epsilonValues.set(state, robustnessResult.getEpsilon());
+										nonRobustStrategy.set(state, strategyToCheck);
+										trembles.set(state, robustnessResult.getTrembles());
 
 //									System.out.println("\t\t\tepsilon: " + epsilon);
 
-										CSGRobustCorrelatedZ3 robustZ3 = new CSGRobustCorrelatedZ3(utilitiesHistory.get(state).size(), coalitions.size());
-										EquilibriumResult robustStrat = robustZ3.computeEquilibrium(utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
+										if (computeRobustStrat) {
+											CSGRobustCorrelatedZ3 robustZ3 = new CSGRobustCorrelatedZ3(utilitiesHistory.get(state).size(), coalitions.size());
+											EquilibriumResult robustStrat = robustZ3.computeEquilibrium(utilitiesHistory.get(state), ceConstraintsHistory.get(state), strategyHistory.get(state), ceVarMapHistory.get(state), eqType);
 
-										epsilonValues.set(state, robustnessResult.getEpsilon());
-										nonRobustStrategy.set(state, strategyToCheck);
-										robustStrategy.set(state, robustStrat.getStrategy());
-										trembles.set(state, robustnessResult.getTrembles());
+											robustStrategy.set(state, robustStrat.getStrategy());
+										}
+
 
 									} catch (GRBException e) {
 										System.out.println(e.getMessage());
@@ -1803,36 +1809,105 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 						}
 					}
 
+					if (computeRobustStrat) {
+						mainLog.println("Iterating through all states...");
 
-					mainLog.println("Iterating through all states...");
+						for (int stateIndex = 0; stateIndex < epsilonValues.size(); stateIndex++) {
+							if (epsilonValues.get(stateIndex) == null) {
+								continue;
+							}
+							mainLog.println("State " + stateIndex + ": " + csg.getStatesList().get(stateIndex));
+							mainLog.println("\tEpsilon: " + epsilonValues.get(stateIndex));
+							mainLog.println("\tNon-robust strategy: " + nonRobustStrategy.get(stateIndex));
+							mainLog.println("\t\tTrembles the non-robust strategy is robust against:");
+							HashMap<Pair<BitSet, BitSet>, Double> stateTremble = trembles.get(stateIndex);
+							for (Pair<BitSet, BitSet> singleTremble : stateTremble.keySet()) {
+								mainLog.println("\t\t\t" + singleTremble + ": " + stateTremble.get(singleTremble));
+							}
+							mainLog.println("\tRobust strategy: " + robustStrategy.get(stateIndex));
 
-					for (int stateIndex = 0; stateIndex < epsilonValues.size(); stateIndex++) {
-						if (epsilonValues.get(stateIndex) == null) {
-							continue;
-						}
-						mainLog.println("State " + stateIndex + ": " + csg.getStatesList().get(stateIndex));
-						mainLog.println("\tEpsilon: " + epsilonValues.get(stateIndex));
-						mainLog.println("\tNon-robust strategy: " + nonRobustStrategy.get(stateIndex));
-						mainLog.println("\t\tTrembles the non-robust strategy is robust against:");
-						HashMap<Pair<BitSet, BitSet>, Double> stateTremble = trembles.get(stateIndex);
-						for (Pair<BitSet, BitSet> singleTremble : stateTremble.keySet()) {
-							mainLog.println("\t\t\t" + singleTremble + ": " + stateTremble.get(singleTremble));
-						}
-						mainLog.println("\tRobust strategy: " + robustStrategy.get(stateIndex));
-
-						mainLog.println("\tVarMap: " + ceVarMapHistory.get(stateIndex));
-						mainLog.println("\tUtilities: " + utilitiesHistory.get(stateIndex));
+							mainLog.println("\tVarMap: " + ceVarMapHistory.get(stateIndex));
+							mainLog.println("\tUtilities: " + utilitiesHistory.get(stateIndex));
 //						System.out.println("\tMapping: " + mappingHistory.get(stateIndex));
 //						System.out.println("\tStrategies: " + strategyHistory.get(stateIndex));
 //						System.out.println("\tNon-Robust Action Player 0: " + csg.getAvailableActions(stateIndex));
 //						System.out.println(csg.getIndexes()[stateIndex]);
-						mainLog.println("\tOutcome 0: " + csg.getAction(stateIndex,0));
-						mainLog.println("\tOutcome 1: " + csg.getAction(stateIndex,1));
-						mainLog.println("\tOutcome 2: " + csg.getAction(stateIndex,2));
-						mainLog.println("\tOutcome 3: " + csg.getAction(stateIndex,3));
-						mainLog.println("\tAll Available Actions: " + csg.getAvailableActions(stateIndex));
+							mainLog.println("\tOutcome 0: " + csg.getAction(stateIndex,0));
+							mainLog.println("\tOutcome 1: " + csg.getAction(stateIndex,1));
+							mainLog.println("\tOutcome 2: " + csg.getAction(stateIndex,2));
+							mainLog.println("\tOutcome 3: " + csg.getAction(stateIndex,3));
+							mainLog.println("\tAll Available Actions: " + csg.getAvailableActions(stateIndex));
+
+						}
+					} else {
+
+						// Remove null values from the ArrayList
+						epsilonValues.removeIf(value -> value == null);
+
+						if (!epsilonValues.isEmpty()) {
+
+							// Sort the ArrayList
+							Collections.sort(epsilonValues);
+
+							// Compute the necessary values
+							double minEps = epsilonValues.get(0);
+							double maxEps = epsilonValues.get(epsilonValues.size() - 1);
+							double q1Eps = getMedian(epsilonValues.subList(0, epsilonValues.size() / 2));
+							double medianEps = getMedian(epsilonValues);
+							double q3Eps = getMedian(epsilonValues.subList((epsilonValues.size() + 1) / 2, epsilonValues.size()));
+
+
+//						// HashMap to store frequencies
+//						HashMap<Double, Integer> frequencyMap = new HashMap<>();
+//
+//						double maxEps = epsilonValues.get(0);
+//						double minEps = epsilonValues.get(0);
+//						int maxIndex = 0;
+//						int minIndex = 0;
+//
+//						for (int eps_i = 1; eps_i < epsilonValues.size(); eps_i++) {
+//
+//							Double currentValue = epsilonValues.get(eps_i);
+//
+//							if (currentValue == null) {
+//								continue;
+//							}
+//
+//							frequencyMap.put(currentValue, frequencyMap.getOrDefault(currentValue, 0) + 1);
+//
+//							if (currentValue > maxEps) {
+//								maxEps = currentValue;
+//								maxIndex = eps_i;
+//							}
+//							if (currentValue < minEps) {
+//								minEps = currentValue;
+//								minIndex = eps_i;
+//							}
+//						}
+//
+//
+//						mainLog.println("Max-epsilon-value: " + maxEps);
+//						mainLog.println("Max-epsilon-index: " + maxIndex);
+//						mainLog.println("Min-epsilon-value: " + minEps);
+//						mainLog.println("Min-epsilon-index: " + minIndex);
+//
+//						// Print the frequency of each value
+//						for (Map.Entry<Double, Integer> entry : frequencyMap.entrySet()) {
+//							mainLog.println("Epsilon value " + entry.getKey() + " occurs " + entry.getValue() + " times");
+//						}
+
+							mainLog.println("Max-epsilon-value: " + maxEps);
+							mainLog.println("Min-epsilon-value: " + minEps);
+							mainLog.println("Q1-epsilon-value: " + q1Eps);
+							mainLog.println("Q2-epsilon-value: " + medianEps);
+							mainLog.println("Q3-epsilon-value: " + q3Eps);
+						}
+						else {
+							mainLog.println("Epsilon map is empty");
+						}
 
 					}
+
 				}
 
 //
@@ -1907,6 +1982,15 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 		return result;
 
+	}
+
+	private double getMedian(List<Double> values) {
+		int size = values.size();
+		if (size % 2 == 0) {
+			return (values.get(size / 2 - 1) + values.get(size / 2)) / 2.0;
+		} else {
+			return values.get(size / 2);
+		}
 	}
 
 	// function to inject state noise into a joint action
