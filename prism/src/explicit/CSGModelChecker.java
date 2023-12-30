@@ -1175,7 +1175,7 @@ public class CSGModelChecker extends ProbModelChecker
 	{
 		ModelCheckerResult res = new ModelCheckerResult();
 		CSGModelCheckerEquilibria csgeq = new CSGModelCheckerEquilibria(this);
-		res = csgeq.computeMultiReachEquilibria(csg, coalitions, rewards, targets, null, eqType, crit, min);
+		res = csgeq.computeMultiReachRewardsEquilibria(csg, coalitions, rewards, targets, null, eqType, crit, min);
 		return res;
 	}
 

@@ -62,7 +62,7 @@ public class CSGRobustCorrelatedZ3 implements CSGCorrelated {
         name = Version.getFullVersion();
         zero = ctx.mkInt(0);
         one = ctx.mkInt(1);
-        vars = new RealExpr[n_entries * n_entries * n_entries + 1];
+        vars = new RealExpr[n_entries * n_entries * n_entries * n_entries+ 1];
         payoffs = new ArithExpr[n_coalitions];
         this.n_coalitions = n_coalitions;
         this.n_entries = n_entries;
