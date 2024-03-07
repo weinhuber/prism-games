@@ -73,7 +73,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         env.set("Quad", "1");
         env.start();
         GRBModel model = new GRBModel(env);
-        GRBVar[] vars = new GRBVar[n_entries * n_entries * n_entries + 1];
+        GRBVar[] vars = new GRBVar[n_entries * n_entries * n_entries * n_entries + 1];
 
         for (int i = 0; i < vars.length; i++) {
             // Add a continuous variable named "v" + i, with lower bound 0 and upper bound 1
