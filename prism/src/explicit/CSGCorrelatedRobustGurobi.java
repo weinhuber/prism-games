@@ -32,7 +32,7 @@ import java.util.stream.IntStream;
 
 import prism.Pair;
 
-import gurobi.*;
+import com.gurobi.gurobi.*;
 
 /**
  * Gurobi-based implementation for accepting correlated equilibria
@@ -58,8 +58,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 
     static {
         try {
-            System.loadLibrary("gurobi100");
-//            System.load("/Library/gurobi1003/macos_universal2/lib/libgurobi100.dylib");
+            System.loadLibrary("gurobi110");
         } catch (UnsatisfiedLinkError e) {
             System.err.println("Native code library failed to load.\n" + e);
             System.exit(1);
@@ -165,7 +164,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 //        System.out.println("all actions available in this game: " + strategies.toString());
 
         // 1 >= epsilon > 0
-        GRBVar epsilon = model.addVar(10e-4, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
+        GRBVar epsilon = model.addVar(10e-9, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
 
 //        GRBVar minDouble = model.addVar(0.000009, 1.0, 0.0, GRB.CONTINUOUS, "minDouble");
 //        model.addConstr(minDouble, GRB.EQUAL, Double.MIN_VALUE, "minDoubleConstraint");
@@ -392,7 +391,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                             // η(c,e_S u {i}) >= MIN_VALUE * y
                             GRBLinExpr expr = new GRBLinExpr();
 //                            expr.addConstant(1.0);
-                            expr.addTerm(10e-4, y);
+                            expr.addTerm(10e-3, y);
                             model.addConstr(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))], GRB.GREATER_EQUAL, expr, "RHSconstraint(2.4)");
                             model.update();
                         }
@@ -556,7 +555,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
 //        System.out.println("all actions available in this game: " + strategies.toString());
 
         // 1 >= epsilon > 0
-        GRBVar epsilon = model.addVar(10e-4, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
+        GRBVar epsilon = model.addVar(10e-9, 1.0, 0.0, GRB.CONTINUOUS, "epsilon");
 
 //        GRBVar minDouble = model.addVar(0.000009, 1.0, 0.0, GRB.CONTINUOUS, "minDouble");
 //        model.addConstr(minDouble, GRB.EQUAL, Double.MIN_VALUE, "minDoubleConstraint");
@@ -793,7 +792,7 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
                             // η(c,e_S u {i}) <= MIN_VALUE * y
                             GRBLinExpr expr = new GRBLinExpr();
 //                            expr.addConstant(1.0);
-                            expr.addTerm(10e-4, y);
+                            expr.addTerm(10e-9, y);
                             model.addConstr(vars[epsilonCeVarMap.get(new Pair<>(jointOutcome, eSi))], GRB.GREATER_EQUAL, expr, "RHSconstraint(2.4)");
                             model.update();
                         }
@@ -826,8 +825,8 @@ public class CSGCorrelatedRobustGurobi implements CSGCorrelated {
         // set all unused variables to zero
         for (int i = epsilonCeVarMap.size(); i < vars.length; i++) {
             model.addConstr(vars[i], GRB.EQUAL, 0.0, "setUnusedToZero" + i);
-            model.update();
         }
+        model.update();
 
 
         GRBLinExpr objectiveExpr = new GRBLinExpr();
