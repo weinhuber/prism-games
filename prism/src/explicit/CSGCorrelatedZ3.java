@@ -42,7 +42,7 @@ import com.microsoft.z3.RatNum;
 import com.microsoft.z3.RealExpr;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Version;
-import gurobi.GRBException;
+import com.gurobi.gurobi.GRBException;
 
 /**
  * Z3-based implementation for correlated equilibria computation
