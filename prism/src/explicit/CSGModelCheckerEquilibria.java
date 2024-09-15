@@ -30,7 +30,7 @@ package explicit;
 import java.math.BigDecimal;
 import java.util.*;
 
-import gurobi.GRBException;
+import com.gurobi.gurobi.GRBException;
 import org.apache.commons.math3.util.Precision;
 
 import explicit.rewards.CSGRewards;
@@ -2364,7 +2364,9 @@ public class CSGModelCheckerEquilibria extends CSGModelChecker
 
 	private double getMedian(List<Double> values) {
 		int size = values.size();
-		if (size % 2 == 0) {
+		if (size == 0) {
+			return 0.0;
+		} else if (size % 2 == 0) {
 			return (values.get(size / 2 - 1) + values.get(size / 2)) / 2.0;
 		} else {
 			return values.get(size / 2);
